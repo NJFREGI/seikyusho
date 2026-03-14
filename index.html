@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>請求書管理システム</title>
+<title>請求書管理画面</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -137,6 +137,32 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
 .line-item-total { font-size: 13px; font-weight: 600; color: var(--accent); }
 .btn-icon { width: 26px; height: 26px; border: none; background: #fee2e2; color: #991b1b; border-radius: 4px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; }
 .add-line-btn { width: 100%; padding: 7px; background: white; border: none; border-top: 1px solid var(--border); cursor: pointer; color: var(--blue); font-size: 13px; font-family: 'Noto Sans JP', sans-serif; margin-top: 4px; }
+
+/* ===== TEMPLATE ITEMS ===== */
+.template-items {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  background: var(--paper); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px;
+}
+.tpl-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; background: white; border-radius: 6px;
+  border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.15s; user-select: none;
+}
+.tpl-item:hover { border-color: var(--blue); background: #f0f7ff; }
+.tpl-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--blue); cursor: pointer; flex-shrink: 0; }
+.tpl-item input[type="checkbox"]:checked + .tpl-name { color: var(--blue); font-weight: 600; }
+.tpl-item:has(input:checked) { border-color: var(--blue); background: #e8f4fd; }
+.tpl-name { font-size: 13px; flex: 1; }
+.tpl-price { font-size: 12px; color: var(--accent); font-weight: 600; white-space: nowrap; }
+@media (max-width: 700px) {
+  .template-items { grid-template-columns: 1fr; }
+  .tpl-item { padding: 12px; }
+  .tpl-item input[type="checkbox"] { width: 20px; height: 20px; }
+  .tpl-name { font-size: 15px; }
+  .tpl-price { font-size: 14px; }
+}
 
 .auto-notice { background: #e8f4fd; border: 1px solid #b3d4f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: #1a5276; display: flex; align-items: center; gap: 10px; }
 .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-light); }
@@ -430,13 +456,26 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
       </div>
     </div>
     <div class="form-group">
+      <label>快速添加项目 <span style="font-weight:400;color:var(--ink-light)">（勾选后点击「添加选中项目」）</span></label>
+      <div class="template-items">
+        <label class="tpl-item"><input type="checkbox" value="レジスター" data-price="80000"><span class="tpl-name">レジスター</span><span class="tpl-price">¥80,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="計量レジスター" data-price="90000"><span class="tpl-name">計量レジスター</span><span class="tpl-price">¥90,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="タブレット" data-price="35000"><span class="tpl-name">タブレット</span><span class="tpl-price">¥35,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="キャッシュドロア" data-price="8000"><span class="tpl-name">キャッシュドロア</span><span class="tpl-price">¥8,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="プリンター" data-price="29000"><span class="tpl-name">プリンター</span><span class="tpl-price">¥29,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="月額料金" data-price="9000"><span class="tpl-name">月額料金</span><span class="tpl-price">¥9,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="特定技能支援費" data-price="10000"><span class="tpl-name">特定技能支援費</span><span class="tpl-price">¥10,000/人</span></label>
+      </div>
+      <button class="btn btn-blue btn-sm" style="margin-top:8px;width:100%;justify-content:center" onclick="addTemplateItems()">＋ 添加选中项目</button>
+    </div>
+    <div class="form-group">
       <label>请求明细</label>
       <div class="line-items">
         <div class="line-item-header">
           <span>项目名</span><span>数量</span><span>单价(税前)</span><span>金额</span><span></span>
         </div>
         <div id="lineItemsBody"></div>
-        <button class="add-line-btn" onclick="addLineItem()">＋ 添加项目</button>
+        <button class="add-line-btn" onclick="addLineItem()">＋ 手动添加项目</button>
       </div>
     </div>
     <div style="background:var(--paper);border-radius:6px;padding:10px 14px;font-size:13px;display:flex;justify-content:flex-end;gap:20px">
@@ -839,6 +878,15 @@ function setLineItems(lines) {
   document.getElementById('lineItemsBody').innerHTML = '';
   lines.forEach(l => addLineItem(l));
   updateModalCalc();
+}
+
+function addTemplateItems() {
+  const checked = document.querySelectorAll('.template-items input[type="checkbox"]:checked');
+  if (!checked.length) { alert('请先勾选要添加的项目'); return; }
+  checked.forEach(cb => {
+    addLineItem({ name: cb.value, qty: 1, price: parseInt(cb.dataset.price) });
+    cb.checked = false;
+  });
 }
 
 function addLineItem(line) {
