@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>請求書管理システム</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap');
+
+:root {
+  --ink: #1a1a2e;
+  --ink-light: #4a4a6a;
+  --paper: #f8f6f0;
+  --paper-warm: #ede9e0;
+  --accent: #c0392b;
+  --accent-light: #e74c3c;
+  --border: #d4cfc5;
+  --shadow: rgba(26,26,46,0.12);
+  --success: #27ae60;
+  --blue: #2980b9;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+
+header {
+  background: var(--ink); color: white; padding: 0 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 12px var(--shadow);
+}
+header h1 { font-family: 'Noto Serif JP', serif; font-size: 17px; font-weight: 700; letter-spacing: 1px; }
+header h1 span { color: #e74c3c; }
+.header-meta { font-size: 11px; opacity: 0.55; }
+
+.tabs { background: var(--ink); display: flex; padding: 0 24px; border-top: 1px solid rgba(255,255,255,0.08); }
+.tab-btn {
+  background: none; border: none; color: rgba(255,255,255,0.5);
+  padding: 9px 18px; cursor: pointer; font-size: 13px;
+  font-family: 'Noto Sans JP', sans-serif;
+  border-bottom: 2px solid transparent; transition: all 0.2s;
+}
+.tab-btn.active { color: white; border-bottom-color: #e74c3c; }
+.tab-btn:hover { color: white; }
+
+main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; }
+.section-title { font-family: 'Noto Serif JP', serif; font-size: 19px; font-weight: 700; }
+.section-title small { font-family: 'Noto Sans JP', sans-serif; font-size: 12px; color: var(--ink-light); margin-left: 8px; font-weight: 400; }
+
+.btn {
+  padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer;
+  font-size: 13px; font-family: 'Noto Sans JP', sans-serif; font-weight: 500;
+  transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent-light); }
+.btn-secondary { background: var(--ink); color: white; }
+.btn-secondary:hover { background: #2c2c4e; }
+.btn-outline { background: white; color: var(--ink); border: 1px solid var(--border); }
+.btn-outline:hover { background: var(--paper-warm); }
+.btn-success { background: var(--success); color: white; }
+.btn-blue { background: var(--blue); color: white; }
+.btn-pdf { background: #8e44ad; color: white; }
+.btn-pdf:hover { background: #9b59b6; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.month-bar {
+  background: white; border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px 18px; margin-bottom: 18px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.month-bar label { font-size: 13px; font-weight: 500; }
+.month-bar input[type="month"] {
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px;
+  font-family: 'Noto Sans JP', sans-serif; font-size: 14px; background: var(--paper);
+}
+.month-bar .stat { margin-left: auto; font-size: 13px; color: var(--ink-light); }
+.month-bar .stat strong { color: var(--accent); font-size: 17px; }
+
+.inv-table-wrap { background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.inv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.inv-table th { background: var(--ink); color: white; padding: 10px 12px; text-align: left; font-weight: 500; }
+.inv-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.inv-table tr:last-child td { border-bottom: none; }
+.inv-table tr:hover td { background: var(--paper); }
+.inv-table .amount { font-weight: 700; color: var(--accent); }
+.inv-table .actions { display: flex; gap: 5px; flex-wrap: wrap; }
+.status-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.status-pending { background: #fef3cd; color: #856404; }
+.status-paid { background: #d1f2e1; color: #1a7a41; }
+
+.total-row {
+  background: var(--paper-warm); display: flex; justify-content: flex-end;
+  padding: 12px 18px; border-top: 2px solid var(--border); gap: 28px; flex-wrap: wrap;
+}
+.total-item { text-align: right; }
+.total-item label { color: var(--ink-light); display: block; font-size: 11px; }
+.total-item strong { font-size: 16px; }
+.total-item.grand strong { color: var(--accent); font-size: 20px; }
+
+.store-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.store-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.store-card:hover { box-shadow: 0 4px 14px var(--shadow); }
+.store-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.store-name { font-weight: 700; font-size: 14px; }
+.store-meta { font-size: 12px; color: var(--ink-light); line-height: 1.8; }
+.store-actions { display: flex; gap: 6px; margin-top: 10px; }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: white; border-radius: 10px; padding: 26px; width: 540px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.modal h2 { font-family: 'Noto Serif JP', serif; font-size: 17px; margin-bottom: 18px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.form-group { margin-bottom: 14px; }
+.form-group label { display: block; font-size: 12px; font-weight: 500; color: var(--ink-light); margin-bottom: 5px; }
+.form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; font-family: 'Noto Sans JP', sans-serif; font-size: 14px; background: var(--paper); }
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+.line-items { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.line-item-header { display: grid; grid-template-columns: 1fr 70px 90px 80px 32px; background: var(--ink-light); color: white; padding: 7px 8px; font-size: 11px; gap: 6px; }
+.line-item-row { display: grid; grid-template-columns: 1fr 70px 90px 80px 32px; padding: 6px 8px; gap: 6px; align-items: center; border-top: 1px solid var(--border); }
+.line-item-row input { padding: 4px 6px; border: 1px solid var(--border); border-radius: 3px; font-size: 12px; width: 100%; }
+.line-item-total { font-size: 12px; font-weight: 600; color: var(--accent); }
+.btn-icon { width: 26px; height: 26px; border: none; background: #fee2e2; color: #991b1b; border-radius: 4px; cursor: pointer; font-size: 15px; display: flex; align-items: center; justify-content: center; }
+.add-line-btn { width: 100%; padding: 7px; background: var(--paper); border: none; border-top: 1px solid var(--border); cursor: pointer; color: var(--blue); font-size: 13px; font-family: 'Noto Sans JP', sans-serif; }
+
+.auto-notice { background: #e8f4fd; border: 1px solid #b3d4f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: #1a5276; display: flex; align-items: center; gap: 10px; }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--ink-light); }
+.empty-state .icon { font-size: 46px; margin-bottom: 14px; }
+
+/* PDF loading overlay */
+.pdf-loading {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 999; align-items: center; justify-content: center; flex-direction: column; gap: 16px;
+}
+.pdf-loading.show { display: flex; }
+.pdf-loading p { color: white; font-size: 15px; }
+.spinner { width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== INVOICE RENDER (off-screen for PDF) ===== */
+#pdfRenderArea {
+  position: fixed; left: -9999px; top: 0; width: 794px;
+  background: white; font-family: 'Noto Sans JP', sans-serif;
+}
+.inv-page {
+  width: 794px; min-height: 1123px; background: white;
+  padding: 50px 55px; font-size: 13px; line-height: 1.7;
+  position: relative; page-break-after: always;
+}
+.inv-page .p-logo { text-align: center; margin-bottom: 12px; }
+.inv-page .p-logo-box { display: inline-block; background: #1a1a2e; color: white; font-weight: 700; font-size: 13px; padding: 5px 14px; border-radius: 3px; margin-bottom: 4px; }
+.inv-page .p-logo-sub { font-size: 10px; color: #888; }
+.inv-page .p-title { text-align: center; font-size: 20px; font-weight: 700; padding-bottom: 12px; border-bottom: 2px solid #1a1a2e; margin-bottom: 22px; }
+.inv-page .p-header { display: flex; justify-content: space-between; margin-bottom: 22px; }
+.inv-page .p-to { font-size: 16px; font-weight: 700; border-bottom: 1px solid #1a1a2e; padding-bottom: 3px; }
+.inv-page .p-dates { text-align: right; font-size: 12px; color: #333; }
+.inv-page .p-summary { display: flex; border: 1px solid #1a1a2e; margin-bottom: 22px; }
+.inv-page .p-sum-cell { flex: 1; padding: 10px 14px; text-align: center; }
+.inv-page .p-sum-cell + .p-sum-cell { border-left: 1px solid #1a1a2e; }
+.inv-page .p-sum-cell label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+.inv-page .p-sum-cell .v { font-size: 15px; font-weight: 700; }
+.inv-page .p-sum-cell.grand { flex: 2; }
+.inv-page .p-sum-cell.grand .v { font-size: 22px; font-weight: 700; }
+.inv-page table.p-items { width: 100%; border-collapse: collapse; margin-bottom: 22px; font-size: 13px; }
+.inv-page table.p-items th { background: #4a4a6a; color: white; padding: 8px 10px; text-align: left; font-weight: 500; }
+.inv-page table.p-items td { padding: 8px 10px; border-bottom: 1px solid #ddd; }
+.inv-page table.p-items td.num { text-align: right; }
+.inv-page table.p-items tr.empty td { color: transparent; border-bottom: 1px solid #eee; }
+.inv-page .p-bank { border: 1px solid #999; padding: 10px 14px; font-size: 12px; margin-bottom: 22px; line-height: 1.8; }
+.inv-page .p-divider { border: none; border-top: 1px dashed #999; margin: 18px 0; }
+.inv-page .p-receipt { display: flex; justify-content: space-between; align-items: flex-start; }
+.inv-page .p-receipt-left { font-size: 13px; }
+.inv-page .p-receipt-left .p-receipt-date { font-size: 16px; font-weight: 700; margin-top: 18px; }
+.inv-page .p-issuer { text-align: right; }
+.inv-page .p-issuer h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.inv-page .p-issuer p { font-size: 11px; color: #555; line-height: 1.7; }
+.inv-page .p-stamp { width: 70px; height: 70px; border: 2px solid #c0392b; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #c0392b; font-size: 9px; text-align: center; margin-top: 8px; padding: 4px; line-height: 1.3; }
+
+/* PREVIEW TAB */
+.preview-toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.preview-toolbar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: 'Noto Sans JP', sans-serif; }
+.preview-frame { background: white; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; min-height: 200px; }
+</style>
+</head>
+<body>
+
+<!-- PDF Loading overlay -->
+<div class="pdf-loading" id="pdfLoading">
+  <div class="spinner"></div>
+  <p id="pdfLoadingMsg">正在生成PDF...</p>
+</div>
+
+<!-- Off-screen render area for PDF -->
+<div id="pdfRenderArea"></div>
+
+<header>
+  <h1>請求書<span>管理</span>システム</h1>
+  <div class="header-meta" id="headerDate"></div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('invoices',this)">📋 请求书一览</button>
+  <button class="tab-btn" onclick="switchTab('stores',this)">🏪 店铺管理</button>
+  <button class="tab-btn" onclick="switchTab('preview',this)">👁 预览/下载</button>
+</div>
+
+<main>
+
+<!-- TAB: INVOICES -->
+<div id="tab-invoices" class="tab-content active">
+  <div class="auto-notice">
+    <span style="font-size:20px">🤖</span>
+    <div><strong>自动生成：</strong>每月1日打开工具时自动生成本月所有请求书。也可手动选月份后点击生成。</div>
+  </div>
+
+  <div class="month-bar">
+    <label>月份：</label>
+    <input type="month" id="currentMonth" onchange="loadInvoices()">
+    <button class="btn btn-success" onclick="generateMonth()">⚡ 生成本月请求书</button>
+    <button class="btn btn-primary" onclick="openNewInvoice()">＋ 新增</button>
+    <button class="btn btn-pdf" onclick="downloadAllPDF()">📥 全部下载PDF</button>
+    <div class="stat" id="monthStat"></div>
+  </div>
+
+  <div class="inv-table-wrap">
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th>请求对象</th>
+          <th>对象期间</th>
+          <th>支援人数</th>
+          <th>小计</th>
+          <th>消费税</th>
+          <th>请求金额(含税)</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="invoiceTableBody"></tbody>
+    </table>
+    <div class="total-row" id="totalRow" style="display:none">
+      <div class="total-item"><label>小计</label><strong id="totalSubtotal">¥0</strong></div>
+      <div class="total-item"><label>消费税</label><strong id="totalTax">¥0</strong></div>
+      <div class="total-item grand"><label>合计(含税)</label><strong id="totalGrand">¥0</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: STORES -->
+<div id="tab-stores" class="tab-content">
+  <div class="section-header">
+    <div class="section-title">店铺管理 <small>设置每家店铺的默认月额和人数</small></div>
+    <button class="btn btn-primary" onclick="openNewStore()">＋ 新增店铺</button>
+  </div>
+  <div class="store-grid" id="storeGrid"></div>
+</div>
+
+<!-- TAB: PREVIEW -->
+<div id="tab-preview" class="tab-content">
+  <div class="preview-toolbar">
+    <label style="font-size:13px;font-weight:500">选择请求书：</label>
+    <select id="previewSelect" onchange="renderPreview()">
+      <option value="">-- 请选择 --</option>
+    </select>
+    <button class="btn btn-pdf" onclick="downloadSinglePDF()">📥 下载此PDF</button>
+    <button class="btn btn-secondary" onclick="window.print()">🖨 打印</button>
+  </div>
+  <div class="preview-frame" id="previewArea">
+    <div class="empty-state"><div class="icon">📄</div><p>请从上方选择请求书进行预览</p></div>
+  </div>
+</div>
+
+</main>
+
+<!-- MODAL: INVOICE -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal">
+    <h2 id="invoiceModalTitle">新增请求书</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>选择店铺</label>
+        <select id="inv-store" onchange="onStoreSelect()">
+          <option value="">-- 选择 --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>请求对象名称</label>
+        <input type="text" id="inv-name" placeholder="マルヤス酒場 北千住店">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>期间开始</label>
+        <input type="date" id="inv-period-start">
+      </div>
+      <div class="form-group">
+        <label>期间结束</label>
+        <input type="date" id="inv-period-end">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>支払期日</label>
+        <input type="date" id="inv-due">
+      </div>
+      <div class="form-group">
+        <label>状态</label>
+        <select id="inv-status">
+          <option value="pending">未支払</option>
+          <option value="paid">支払済</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>请求明细</label>
+      <div class="line-items">
+        <div class="line-item-header">
+          <span>项目名</span><span>数量</span><span>单价(税前)</span><span>金额</span><span></span>
+        </div>
+        <div id="lineItemsBody"></div>
+        <button class="add-line-btn" onclick="addLineItem()">＋ 添加项目</button>
+      </div>
+    </div>
+    <div style="background:var(--paper);border-radius:6px;padding:10px 14px;font-size:13px;display:flex;justify-content:flex-end;gap:20px">
+      <span>小计: <strong id="modalSubtotal">¥0</strong></span>
+      <span>消费税: <strong id="modalTax">¥0</strong></span>
+      <span>合计: <strong id="modalTotal" style="color:var(--accent);font-size:15px">¥0</strong></span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('invoiceModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveInvoice()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: STORE -->
+<div class="modal-overlay" id="storeModal">
+  <div class="modal">
+    <h2 id="storeModalTitle">新增店铺</h2>
+    <div class="form-group">
+      <label>店铺名称</label>
+      <input type="text" id="st-name" placeholder="マルヤス酒場 北千住店">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>月額料金（円）</label>
+        <input type="number" id="st-monthly" value="9000">
+      </div>
+      <div class="form-group">
+        <label>默认技能支援人数</label>
+        <input type="number" id="st-persons" value="1" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>备注</label>
+      <input type="text" id="st-note" placeholder="可选">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('storeModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveStore()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== DATA =====
+const STORAGE_KEY = 'seikyusho_v3';
+let data = { stores: [], invoices: [], lastAutoGenMonth: '' };
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) data = JSON.parse(raw);
+    if (data.stores.length === 0) seedDefaultData();
+  } catch(e) { seedDefaultData(); }
+}
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+function seedDefaultData() {
+  data.stores = [
+    { id:'s1',  name:'マルヤス酒場 北千住店',   monthly:9000, persons:2 },
+    { id:'s2',  name:'マルヤス酒場 船橋店',     monthly:9000, persons:2 },
+    { id:'s3',  name:'マルヤス酒場 柏店',       monthly:9000, persons:4 },
+    { id:'s4',  name:'マルヤス酒場 蒲田店',     monthly:9000, persons:1 },
+    { id:'s5',  name:'マルヤス酒場 新橋店',     monthly:9000, persons:1 },
+    { id:'s6',  name:'マルヤス酒場 西葛西店',   monthly:9000, persons:1 },
+    { id:'s7',  name:'羊炭長',                  monthly:9000, persons:5 },
+    { id:'s8',  name:'マルヤス酒場 浦安店',     monthly:9000, persons:1 },
+    { id:'s9',  name:'マルヤス酒場 神田店',     monthly:9000, persons:1 },
+    { id:'s10', name:'マルヤス酒場 日暮里店',   monthly:9000, persons:1 },
+    { id:'s11', name:'マルヤス酒場 本八幡店',   monthly:9000, persons:2 },
+    { id:'s12', name:'マルヤス酒場 御徒町店',   monthly:9000, persons:2 },
+    { id:'s13', name:'マルヤス酒場プラス 関内店', monthly:9000, persons:0 },
+  ];
+  data.invoices = [];
+  saveData();
+}
+
+// ===== UTILS =====
+function uid() { return 'i' + Date.now() + Math.random().toString(36).slice(2,8); }
+function yen(n) { return '¥' + Number(n).toLocaleString(); }
+function fmtDate(s) {
+  if (!s) return '';
+  const [y,m,d] = s.split('-');
+  return y + '年' + parseInt(m) + '月' + parseInt(d) + '日';
+}
+function getMonthStr(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0'); }
+function calcInv(inv) {
+  let sub = 0;
+  (inv.lines||[]).forEach(l => sub += (l.qty||0)*(l.price||0));
+  const tax = Math.floor(sub * 0.1);
+  return { sub, tax, total: sub+tax };
+}
+function lastDayOf(y, m) { return new Date(y, m, 0).getDate(); }
+
+// ===== TABS =====
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'preview') updatePreviewSelect();
+  if (name === 'stores') renderStores();
+}
+
+// ===== INVOICE LIST =====
+function loadInvoices() {
+  const month = document.getElementById('currentMonth').value;
+  const invs = data.invoices.filter(i => i.month === month);
+  const tbody = document.getElementById('invoiceTableBody');
+
+  if (!invs.length) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--ink-light)">
+      本月暂无请求书，点击「⚡ 生成本月请求书」</td></tr>`;
+    document.getElementById('totalRow').style.display = 'none';
+    document.getElementById('monthStat').innerHTML = '';
+    return;
+  }
+
+  let tSub=0, tTax=0, tTotal=0;
+  tbody.innerHTML = invs.map(inv => {
+    const {sub,tax,total} = calcInv(inv);
+    tSub+=sub; tTax+=tax; tTotal+=total;
+    const pl = (inv.lines||[]).find(l=>l.name.includes('技能'));
+    return `<tr>
+      <td><strong>${inv.name}</strong></td>
+      <td style="font-size:11px;color:var(--ink-light)">${inv.periodStart?fmtDate(inv.periodStart)+'〜'+fmtDate(inv.periodEnd):''}</td>
+      <td>${pl ? pl.qty+'人' : '-'}</td>
+      <td>${yen(sub)}</td>
+      <td>${yen(tax)}</td>
+      <td class="amount">${yen(total)}</td>
+      <td><span class="status-badge ${inv.status==='paid'?'status-paid':'status-pending'}">${inv.status==='paid'?'支払済':'未支払'}</span></td>
+      <td class="actions">
+        <button class="btn btn-outline btn-sm" onclick="editInvoice('${inv.id}')">編集</button>
+        <button class="btn btn-pdf btn-sm" onclick="downloadOnePDF('${inv.id}')">📥PDF</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b" onclick="deleteInvoice('${inv.id}')">削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('totalRow').style.display = 'flex';
+  document.getElementById('totalSubtotal').textContent = yen(tSub);
+  document.getElementById('totalTax').textContent = yen(tTax);
+  document.getElementById('totalGrand').textContent = yen(tTotal);
+  document.getElementById('monthStat').innerHTML = `共 <strong>${invs.length}</strong> 件　合計 <strong>${yen(tTotal)}</strong>`;
+}
+
+// ===== GENERATE =====
+function generateMonth() {
+  const month = document.getElementById('currentMonth').value;
+  if (!month) { alert('请先选择月份'); return; }
+  const existing = data.invoices.filter(i=>i.month===month);
+  if (existing.length && !confirm(`本月已有 ${existing.length} 件，是否覆盖重新生成？`)) return;
+  data.invoices = data.invoices.filter(i=>i.month!==month);
+
+  const [y,m] = month.split('-').map(Number);
+  const ld = lastDayOf(y,m);
+  const ps = `${y}-${String(m).padStart(2,'0')}-01`;
+  const pe = `${y}-${String(m).padStart(2,'0')}-${ld}`;
+  const due = `${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}-28`;
+
+  data.stores.forEach(s => {
+    const lines = [{ name:`${y}.${m}.1-${y}.${m}.${ld} 月額料金`, qty:1, price:s.monthly }];
+    if (s.persons>0) lines.push({ name:'特定技能支援費', qty:s.persons, price:10000 });
+    data.invoices.push({ id:uid(), month, name:s.name, storeId:s.id, periodStart:ps, periodEnd:pe, due, lines, status:'pending' });
+  });
+  saveData(); loadInvoices();
+  alert(`✅ 已生成 ${data.stores.length} 件请求书！`);
+}
+
+// ===== BUILD INVOICE HTML (for PDF render) =====
+function buildInvHTML(inv) {
+  const {sub,tax,total} = calcInv(inv);
+  const [y,m] = inv.month.split('-').map(Number);
+  const emptyRows = Math.max(0, 6-(inv.lines||[]).length);
+  return `<div class="inv-page">
+    <div class="p-logo">
+      <div class="p-logo-box">NJF REGI</div><br>
+      <span class="p-logo-sub">新日本富士アシスト</span>
+    </div>
+    <div class="p-title">請求書（兼領収書）</div>
+    <div class="p-header">
+      <div>
+        <div class="p-to">${inv.name} 御中</div>
+        <div style="font-size:12px;margin-top:8px">下記の通りご請求申し上げます。</div>
+      </div>
+      <div class="p-dates">
+        お支払い期日：${fmtDate(inv.due)}<br>
+        ${y}年${m}月${new Date(y,m,0).getDate()}日　締切分
+      </div>
+    </div>
+    <div class="p-summary">
+      <div class="p-sum-cell"><label>小計</label><div class="v">${sub.toLocaleString()}</div></div>
+      <div class="p-sum-cell"><label>消費税</label><div class="v">${tax.toLocaleString()}</div></div>
+      <div class="p-sum-cell grand"><label>ご請求金額(税込)</label><div class="v">${total.toLocaleString()}</div></div>
+    </div>
+    <table class="p-items">
+      <thead><tr><th>詳細</th><th style="text-align:right">数量</th><th style="text-align:right">単価</th><th style="text-align:right">金額</th></tr></thead>
+      <tbody>
+        ${(inv.lines||[]).map(l=>`<tr><td>${l.name}</td><td class="num">${l.qty}</td><td class="num">${l.price.toLocaleString()}</td><td class="num">${(l.qty*l.price).toLocaleString()}</td></tr>`).join('')}
+        ${'<tr class="empty"><td>&nbsp;</td><td></td><td></td><td></td></tr>'.repeat(emptyRows)}
+      </tbody>
+    </table>
+    <div class="p-bank">
+      振込先：<br>
+      三井住友銀行銀行　上野支店　普通　8690693　シンニホンフジアシスト(カ<br>
+      ＊振込手数料は貴社ご負担にてお願い申し上げます。
+    </div>
+    <hr class="p-divider">
+    <div class="p-receipt">
+      <div class="p-receipt-left">
+        <div>上記金額を正に領収いたしました。</div>
+        <div class="p-receipt-date">${fmtDate(inv.due)}</div>
+      </div>
+      <div class="p-issuer">
+        <h3>新日本富士アシスト株式会社</h3>
+        <p>〒110-0016<br>東京都台東区台東4-31-7-203<br>TEL 03-6806-0988　FAX 03-6806-0128<br>登録番号：T3010801026751</p>
+        <div class="p-stamp">新日本<br>富士<br>アシスト</div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===== PDF GENERATION =====
+function showLoading(msg) {
+  document.getElementById('pdfLoadingMsg').textContent = msg || '正在生成PDF...';
+  document.getElementById('pdfLoading').classList.add('show');
+}
+function hideLoading() { document.getElementById('pdfLoading').classList.remove('show'); }
+
+async function renderPageToPDF(jspdf, inv, pageIndex) {
+  const area = document.getElementById('pdfRenderArea');
+  area.innerHTML = buildInvHTML(inv);
+  await new Promise(r => setTimeout(r, 300));
+
+  const canvas = await html2canvas(area.firstChild, {
+    scale: 2, useCORS: true, backgroundColor: '#ffffff',
+    width: 794, windowWidth: 794
+  });
+
+  const imgData = canvas.toDataURL('image/jpeg', 0.95);
+  if (pageIndex > 0) jspdf.addPage();
+  const pdfW = jspdf.internal.pageSize.getWidth();
+  const pdfH = jspdf.internal.pageSize.getHeight();
+  jspdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+}
+
+async function downloadOnePDF(id) {
+  const inv = data.invoices.find(i=>i.id===id);
+  if (!inv) return;
+  showLoading(`正在生成：${inv.name}`);
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    await renderPageToPDF(doc, inv, 0);
+    const safeName = inv.name.replace(/[\/\\:*?"<>|]/g,'_');
+    doc.save(`請求書_${safeName}_${inv.month}.pdf`);
+  } catch(e) {
+    alert('PDF生成失败：' + e.message);
+  } finally {
+    document.getElementById('pdfRenderArea').innerHTML = '';
+    hideLoading();
+  }
+}
+
+async function downloadAllPDF() {
+  const month = document.getElementById('currentMonth').value;
+  const invs = data.invoices.filter(i=>i.month===month);
+  if (!invs.length) { alert('本月暂无请求书'); return; }
+  showLoading(`正在生成 ${invs.length} 张请求书... (1/${invs.length})`);
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    for (let i=0; i<invs.length; i++) {
+      document.getElementById('pdfLoadingMsg').textContent = `正在处理：${invs[i].name} (${i+1}/${invs.length})`;
+      await renderPageToPDF(doc, invs[i], i);
+    }
+    doc.save(`請求書_${month}_全店舗.pdf`);
+  } catch(e) {
+    alert('PDF生成失败：' + e.message);
+  } finally {
+    document.getElementById('pdfRenderArea').innerHTML = '';
+    hideLoading();
+  }
+}
+
+// ===== PREVIEW TAB =====
+function updatePreviewSelect() {
+  const month = document.getElementById('currentMonth').value;
+  const invs = data.invoices.filter(i=>i.month===month);
+  const sel = document.getElementById('previewSelect');
+  sel.innerHTML = '<option value="">-- 请选择 --</option>' +
+    invs.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');
+}
+
+function renderPreview() {
+  const id = document.getElementById('previewSelect').value;
+  const area = document.getElementById('previewArea');
+  if (!id) { area.innerHTML = '<div class="empty-state"><div class="icon">📄</div><p>请选择请求书</p></div>'; return; }
+  const inv = data.invoices.find(i=>i.id===id);
+  if (!inv) return;
+  area.innerHTML = `<div style="padding:20px;background:#f0f0f0;display:flex;justify-content:center">
+    <div style="transform-origin:top center;width:794px">${buildInvHTML(inv)}</div></div>`;
+}
+
+function downloadSinglePDF() {
+  const id = document.getElementById('previewSelect').value;
+  if (!id) { alert('请先选择请求书'); return; }
+  downloadOnePDF(id);
+}
+
+// ===== INVOICE MODAL =====
+let editingInvoiceId = null;
+
+function openNewInvoice() {
+  editingInvoiceId = null;
+  document.getElementById('invoiceModalTitle').textContent = '新增请求书';
+  const sel = document.getElementById('inv-store');
+  sel.innerHTML = '<option value="">-- 选择 --</option>' + data.stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  sel.value = '';
+  document.getElementById('inv-name').value = '';
+  document.getElementById('inv-status').value = 'pending';
+  const month = document.getElementById('currentMonth').value;
+  if (month) {
+    const [y,m] = month.split('-').map(Number);
+    const ld = lastDayOf(y,m);
+    document.getElementById('inv-period-start').value = `${y}-${String(m).padStart(2,'0')}-01`;
+    document.getElementById('inv-period-end').value = `${y}-${String(m).padStart(2,'0')}-${ld}`;
+    document.getElementById('inv-due').value = `${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}-28`;
+  }
+  setLineItems([{name:'月額料金',qty:1,price:9000},{name:'特定技能支援費',qty:1,price:10000}]);
+  openModal('invoiceModal');
+}
+
+function editInvoice(id) {
+  const inv = data.invoices.find(i=>i.id===id);
+  if (!inv) return;
+  editingInvoiceId = id;
+  document.getElementById('invoiceModalTitle').textContent = '编辑请求书';
+  const sel = document.getElementById('inv-store');
+  sel.innerHTML = '<option value="">-- 选择 --</option>' + data.stores.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  sel.value = inv.storeId || '';
+  document.getElementById('inv-name').value = inv.name;
+  document.getElementById('inv-period-start').value = inv.periodStart || '';
+  document.getElementById('inv-period-end').value = inv.periodEnd || '';
+  document.getElementById('inv-due').value = inv.due || '';
+  document.getElementById('inv-status').value = inv.status || 'pending';
+  setLineItems(inv.lines || []);
+  openModal('invoiceModal');
+}
+
+function onStoreSelect() {
+  const sid = document.getElementById('inv-store').value;
+  if (!sid) return;
+  const s = data.stores.find(x=>x.id===sid);
+  if (!s) return;
+  document.getElementById('inv-name').value = s.name;
+  const month = document.getElementById('currentMonth').value;
+  if (month) {
+    const [y,m] = month.split('-').map(Number);
+    const ld = lastDayOf(y,m);
+    const lines = [{name:`${y}.${m}.1-${y}.${m}.${ld} 月額料金`,qty:1,price:s.monthly}];
+    if (s.persons>0) lines.push({name:'特定技能支援費',qty:s.persons,price:10000});
+    setLineItems(lines);
+  }
+}
+
+function setLineItems(lines) {
+  document.getElementById('lineItemsBody').innerHTML = '';
+  lines.forEach(l => addLineItem(l));
+  updateModalCalc();
+}
+
+function addLineItem(line) {
+  const body = document.getElementById('lineItemsBody');
+  const row = document.createElement('div');
+  row.className = 'line-item-row';
+  row.innerHTML = `
+    <input type="text" placeholder="项目名" value="${(line&&line.name)||''}" oninput="updateModalCalc()">
+    <input type="number" placeholder="数量" value="${(line&&line.qty)||1}" min="0" oninput="updateModalCalc()">
+    <input type="number" placeholder="単価" value="${(line&&line.price)||0}" min="0" oninput="updateModalCalc()">
+    <span class="line-item-total">¥0</span>
+    <button class="btn-icon" onclick="this.closest('.line-item-row').remove();updateModalCalc()">×</button>`;
+  body.appendChild(row);
+  updateModalCalc();
+}
+
+function updateModalCalc() {
+  let sub = 0;
+  document.querySelectorAll('.line-item-row').forEach(row => {
+    const inp = row.querySelectorAll('input');
+    const amt = (parseFloat(inp[1].value)||0)*(parseFloat(inp[2].value)||0);
+    sub += amt;
+    row.querySelector('.line-item-total').textContent = yen(amt);
+  });
+  const tax = Math.floor(sub*0.1);
+  document.getElementById('modalSubtotal').textContent = yen(sub);
+  document.getElementById('modalTax').textContent = yen(tax);
+  document.getElementById('modalTotal').textContent = yen(sub+tax);
+}
+
+function saveInvoice() {
+  const name = document.getElementById('inv-name').value.trim();
+  if (!name) { alert('请输入请求对象名称'); return; }
+  const lines = [];
+  document.querySelectorAll('.line-item-row').forEach(row => {
+    const inp = row.querySelectorAll('input');
+    lines.push({ name:inp[0].value, qty:parseFloat(inp[1].value)||0, price:parseFloat(inp[2].value)||0 });
+  });
+  const inv = {
+    id: editingInvoiceId || uid(),
+    month: document.getElementById('currentMonth').value,
+    name, storeId: document.getElementById('inv-store').value,
+    periodStart: document.getElementById('inv-period-start').value,
+    periodEnd: document.getElementById('inv-period-end').value,
+    due: document.getElementById('inv-due').value,
+    lines, status: document.getElementById('inv-status').value
+  };
+  if (editingInvoiceId) {
+    const idx = data.invoices.findIndex(i=>i.id===editingInvoiceId);
+    data.invoices[idx] = inv;
+  } else {
+    data.invoices.push(inv);
+  }
+  saveData(); closeModal('invoiceModal'); loadInvoices();
+}
+
+function deleteInvoice(id) {
+  if (!confirm('确认删除？')) return;
+  data.invoices = data.invoices.filter(i=>i.id!==id);
+  saveData(); loadInvoices();
+}
+
+// ===== STORE =====
+let editingStoreId = null;
+
+function renderStores() {
+  const grid = document.getElementById('storeGrid');
+  grid.innerHTML = data.stores.map(s=>`
+    <div class="store-card">
+      <div class="store-card-header"><div class="store-name">${s.name}</div></div>
+      <div class="store-meta">月額料金: <strong>¥${s.monthly.toLocaleString()}</strong><br>技能支援: <strong>${s.persons}人</strong>${s.note?'<br>'+s.note:''}</div>
+      <div class="store-actions">
+        <button class="btn btn-outline btn-sm" onclick="editStore('${s.id}')">编辑</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b" onclick="deleteStore('${s.id}')">删除</button>
+      </div>
+    </div>`).join('') || '<div class="empty-state"><div class="icon">🏪</div><p>暂无店铺</p></div>';
+}
+
+function openNewStore() {
+  editingStoreId = null;
+  document.getElementById('storeModalTitle').textContent = '新增店铺';
+  ['st-name','st-note'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('st-monthly').value = 9000;
+  document.getElementById('st-persons').value = 1;
+  openModal('storeModal');
+}
+
+function editStore(id) {
+  const s = data.stores.find(x=>x.id===id);
+  if (!s) return;
+  editingStoreId = id;
+  document.getElementById('storeModalTitle').textContent = '编辑店铺';
+  document.getElementById('st-name').value = s.name;
+  document.getElementById('st-monthly').value = s.monthly;
+  document.getElementById('st-persons').value = s.persons;
+  document.getElementById('st-note').value = s.note||'';
+  openModal('storeModal');
+}
+
+function saveStore() {
+  const name = document.getElementById('st-name').value.trim();
+  if (!name) { alert('请输入店铺名称'); return; }
+  const store = { id:editingStoreId||uid(), name, monthly:parseFloat(document.getElementById('st-monthly').value)||9000, persons:parseInt(document.getElementById('st-persons').value)||0, note:document.getElementById('st-note').value.trim() };
+  if (editingStoreId) { const idx=data.stores.findIndex(s=>s.id===editingStoreId); data.stores[idx]=store; }
+  else data.stores.push(store);
+  saveData(); closeModal('storeModal'); renderStores();
+}
+
+function deleteStore(id) {
+  if (!confirm('确认删除？')) return;
+  data.stores = data.stores.filter(s=>s.id!==id);
+  saveData(); renderStores();
+}
+
+// ===== MODAL HELPERS =====
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('open'); }));
+
+// ===== AUTO GENERATE =====
+function checkAutoGen() {
+  const today = new Date();
+  if (today.getDate()!==1) return;
+  const thisMonth = getMonthStr(today);
+  if (data.lastAutoGenMonth===thisMonth) return;
+  if (data.invoices.filter(i=>i.month===thisMonth).length) { data.lastAutoGenMonth=thisMonth; saveData(); return; }
+  document.getElementById('currentMonth').value = thisMonth;
+  generateMonth();
+  data.lastAutoGenMonth = thisMonth;
+  saveData();
+}
+
+// ===== INIT =====
+function init() {
+  loadData();
+  const now = new Date();
+  document.getElementById('currentMonth').value = getMonthStr(now);
+  document.getElementById('headerDate').textContent = now.getFullYear()+'年'+(now.getMonth()+1)+'月'+now.getDate()+'日';
+  loadInvoices();
+  checkAutoGen();
+}
+init();
+</script>
+</body>
+</html>
