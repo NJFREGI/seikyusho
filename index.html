@@ -625,6 +625,10 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
       <span>消费税: <strong id="modalTax">¥0</strong></span>
       <span>合计: <strong id="modalTotal" style="color:var(--accent);font-size:15px">¥0</strong></span>
     </div>
+    <div class="form-group" style="margin-top:14px">
+      <label>備考</label>
+      <textarea id="inv-note" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Noto Sans JP',sans-serif;font-size:13px;resize:vertical;background:var(--paper)" placeholder="備考・特記事項など"></textarea>
+    </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('invoiceModal')">取消</button>
       <button class="btn btn-primary" onclick="saveInvoice()">保存</button>
@@ -673,6 +677,10 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
       <span>小計: <strong id="mitModalSubtotal">¥0</strong></span>
       <span>消費税(10%): <strong id="mitModalTax">¥0</strong></span>
       <span>合計: <strong id="mitModalTotal" style="color:var(--accent);font-size:15px">¥0</strong></span>
+    </div>
+    <div class="form-group" style="margin-top:14px">
+      <label>備考</label>
+      <textarea id="mit-note" rows="3" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:4px;font-family:'Noto Sans JP',sans-serif;font-size:13px;resize:vertical;background:var(--paper)" placeholder="備考・特記事項など"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('mitsumoriModal')">取消</button>
@@ -952,7 +960,7 @@ function buildInvHTML(inv) {
     <!-- 備考 -->
     <div class="p-note">
       <div class="p-note-title">備考</div>
-      <div class="p-note-body">&nbsp;</div>
+      <div class="p-note-body">${inv.note ? inv.note.replace(/\n/g,'<br>') : '&nbsp;'}</div>
     </div>
 
   </div>`;
@@ -1089,6 +1097,7 @@ function openNewInvoice() {
     document.getElementById('inv-due').value = `${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}-28`;
   }
   setLineItems([{name:'月額料金',qty:1,price:9000},{name:'特定技能支援費',qty:1,price:10000}]);
+  document.getElementById('inv-note').value = '';
   openModal('invoiceModal');
 }
 
@@ -1106,6 +1115,7 @@ function editInvoice(id) {
   document.getElementById('inv-due').value = inv.due || '';
   document.getElementById('inv-status').value = inv.status || 'pending';
   setLineItems(inv.lines || []);
+  document.getElementById('inv-note').value = inv.note || '';
   openModal('invoiceModal');
 }
 
@@ -1197,7 +1207,8 @@ function saveInvoice() {
     periodStart: document.getElementById('inv-period-start').value,
     periodEnd: document.getElementById('inv-period-end').value,
     due: document.getElementById('inv-due').value,
-    lines, status: document.getElementById('inv-status').value
+    lines, status: document.getElementById('inv-status').value,
+    note: document.getElementById('inv-note').value.trim()
   };
   if (editingInvoiceId) {
     const idx = data.invoices.findIndex(i=>i.id===editingInvoiceId);
@@ -1353,6 +1364,7 @@ function openNewMitsumori() {
   document.getElementById('mit-name').value = '';
   document.getElementById('mit-date').value = new Date().toISOString().slice(0,10);
   setMitLineItems([]);
+  document.getElementById('mit-note').value = '';
   openModal('mitsumoriModal');
 }
 
@@ -1364,6 +1376,7 @@ function editMitsumori(id) {
   document.getElementById('mit-name').value = m.name;
   document.getElementById('mit-date').value = m.date||'';
   setMitLineItems(m.lines||[]);
+  document.getElementById('mit-note').value = m.note || '';
   openModal('mitsumoriModal');
 }
 
@@ -1444,7 +1457,8 @@ function saveMitsumori() {
   const m = {
     id: editingMitsumoriId || uid(),
     seq: editingMitsumoriId ? (data.mitsumori.find(x=>x.id===editingMitsumoriId)||{}).seq : nextMitSeq(),
-    name, date: document.getElementById('mit-date').value, lines
+    name, date: document.getElementById('mit-date').value, lines,
+    note: document.getElementById('mit-note').value.trim()
   };
   if (editingMitsumoriId) {
     const idx = data.mitsumori.findIndex(x=>x.id===editingMitsumoriId);
@@ -1520,7 +1534,7 @@ function buildMitsumoriHTML(m) {
 
     <div class="p-note" style="min-height:80px">
       <div class="p-note-title">備考</div>
-      <div class="p-note-body">&nbsp;</div>
+      <div class="p-note-body">${m.note ? m.note.replace(/\n/g,'<br>') : '&nbsp;'}</div>
     </div>
   </div>`;
 }
