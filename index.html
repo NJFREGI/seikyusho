@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>請求書管理システム</title>
+<title>NJF REGI 書類管理システム</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -126,6 +126,20 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
 
 .line-items { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
 .line-item-header { display: none; }
+/* 見積明細 6列 */
+.mit-line-item-header { display: none; }
+.mit-line-item-row {
+  padding: 8px; border-top: 1px solid var(--border);
+  background: var(--paper); margin: 6px; border-radius: 6px;
+}
+.mit-line-item-row .mit-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.mit-line-item-row .mit-fields .field label { display: block; font-size: 11px; color: var(--ink-light); margin-bottom: 4px; }
+.mit-line-item-row .mit-fields .field input { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+.mit-line-item-row .mit-name-wrap { margin-bottom: 8px; }
+.mit-line-item-row .mit-name-wrap label { display: block; font-size: 11px; color: var(--ink-light); margin-bottom: 4px; }
+.mit-line-item-row .mit-name-wrap input { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+.mit-line-footer { display: flex; justify-content: space-between; align-items: center; }
+.mit-line-total { font-size: 13px; font-weight: 600; color: var(--accent); }
 .line-item-row { padding: 8px; border-top: 1px solid var(--border); background: var(--paper); margin: 6px; border-radius: 6px; }
 .line-item-name-wrap { margin-bottom: 8px; }
 .line-item-name-wrap label { display: block; font-size: 11px; color: var(--ink-light); margin-bottom: 4px; }
@@ -253,6 +267,20 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
 
   /* Line items - vertical card style on mobile */
   .line-item-header { display: none; }
+/* 見積明細 6列 */
+.mit-line-item-header { display: none; }
+.mit-line-item-row {
+  padding: 8px; border-top: 1px solid var(--border);
+  background: var(--paper); margin: 6px; border-radius: 6px;
+}
+.mit-line-item-row .mit-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.mit-line-item-row .mit-fields .field label { display: block; font-size: 11px; color: var(--ink-light); margin-bottom: 4px; }
+.mit-line-item-row .mit-fields .field input { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+.mit-line-item-row .mit-name-wrap { margin-bottom: 8px; }
+.mit-line-item-row .mit-name-wrap label { display: block; font-size: 11px; color: var(--ink-light); margin-bottom: 4px; }
+.mit-line-item-row .mit-name-wrap input { width: 100%; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; }
+.mit-line-footer { display: flex; justify-content: space-between; align-items: center; }
+.mit-line-total { font-size: 13px; font-weight: 600; color: var(--accent); }
   .line-item-row {
     display: flex; flex-direction: column;
     padding: 12px; gap: 10px;
@@ -304,10 +332,10 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
 
 /* 上部2カラム */
 .inv-page .p-top {
-  display: flex; gap: 28px; margin-bottom: 28px; align-items: flex-start;
+  display: flex; gap: 8px; margin-bottom: 28px; align-items: flex-start;
 }
 .inv-page .p-top-left { flex: 1; }
-.inv-page .p-top-right { width: 235px; flex-shrink: 0; }
+.inv-page .p-top-right { width: 300px; flex-shrink: 0; }
 
 /* 請求先 */
 .inv-page .p-to {
@@ -330,6 +358,17 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
 /* 日付行 */
 .inv-page .p-date-row { font-size: 12px; color: #333; }
 .inv-page .p-date-label { color: #666; }
+.inv-page .p-date-inline {
+  display: flex; gap: 18px; flex-wrap: wrap;
+  font-size: 12px; color: #333;
+}
+.inv-page .p-dates-right {
+  margin-top: 10px; padding-top: 8px;
+  border-top: 1px solid #ddd; font-size: 11.5px;
+}
+.inv-page .p-dates-right .p-date-row {
+  color: #333; line-height: 1.9;
+}
 
 /* 発行会社（右） */
 .inv-page .p-issuer-name {
@@ -341,7 +380,8 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
   display: flex; align-items: flex-start; gap: 10px;
 }
 .inv-page .p-issuer-info {
-  font-size: 10.5px; color: #444; line-height: 1.85; flex: 1;
+  font-size: 12px; color: #444; line-height: 1.85; flex: 1;
+  white-space: nowrap;
 }
 .inv-page .p-stamp-wrap { flex-shrink: 0; }
 
@@ -408,14 +448,15 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
 <div id="pdfRenderArea"></div>
 
 <header>
-  <h1>新日本富士アシスト株式会社　請求書<span>管理</span>システム</h1>
+  <h1>新日本富士アシスト　<span>書類管理</span>システム</h1>
   <div class="header-meta" id="headerDate"></div>
 </header>
 
 <div class="tabs">
-  <button class="tab-btn active" onclick="switchTab('invoices',this)">📋 请求书一览</button>
+  <button class="tab-btn active" onclick="switchTab('invoices',this)">📋 請求書</button>
+  <button class="tab-btn" onclick="switchTab('mitsumori',this)">📝 見積書</button>
   <button class="tab-btn" onclick="switchTab('stores',this)">🏪 店铺管理</button>
-  <button class="tab-btn" onclick="switchTab('preview',this)">👁 预览/下载</button>
+  <button class="tab-btn" onclick="switchTab('preview',this)">👁 預覧/下載</button>
 </div>
 
 <main>
@@ -458,6 +499,30 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
       <div class="total-item"><label>消费税</label><strong id="totalTax">¥0</strong></div>
       <div class="total-item grand"><label>合计(含税)</label><strong id="totalGrand">¥0</strong></div>
     </div>
+  </div>
+</div>
+
+<!-- TAB: 見積書 -->
+<div id="tab-mitsumori" class="tab-content">
+  <div class="section-header">
+    <div class="section-title">見積書 <small>新規作成・管理</small></div>
+    <button class="btn btn-primary" onclick="openNewMitsumori()">＋ 新規見積書</button>
+  </div>
+
+  <div class="inv-table-wrap">
+    <table class="inv-table">
+      <thead>
+        <tr>
+          <th>見積番号</th>
+          <th>宛先</th>
+          <th>見積日</th>
+          <th>合計金額(税込)</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="mitsumoriTableBody"></tbody>
+    </table>
+    <div class="inv-card-list" id="mitsumoriCardList"></div>
   </div>
 </div>
 
@@ -561,6 +626,54 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
   </div>
 </div>
 
+<!-- MODAL: 見積書 -->
+<div class="modal-overlay" id="mitsumoriModal">
+  <div class="modal">
+    <h2 id="mitsumoriModalTitle">新規見積書</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>宛先（会社名）</label>
+        <input type="text" id="mit-name" placeholder="例：浜の牡蠣小屋">
+      </div>
+      <div class="form-group">
+        <label>見積日</label>
+        <input type="date" id="mit-date">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>快速添加项目 <span style="font-weight:400;color:var(--ink-light)">（勾选后点击添加）</span></label>
+      <div class="template-items">
+        <label class="tpl-item"><input type="checkbox" value="レジスター" data-price="80000"><span class="tpl-name">レジスター</span><span class="tpl-price">¥80,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="計量レジスター" data-price="90000"><span class="tpl-name">計量レジスター</span><span class="tpl-price">¥90,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="タブレット" data-price="35000"><span class="tpl-name">タブレット</span><span class="tpl-price">¥35,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="キャッシュドロア" data-price="8000"><span class="tpl-name">キャッシュドロア</span><span class="tpl-price">¥8,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="クラウドプリンター" data-price="29000"><span class="tpl-name">クラウドプリンター</span><span class="tpl-price">¥29,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="設置費" data-price="20000"><span class="tpl-name">設置費</span><span class="tpl-price">¥20,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="商品リスト導入費" data-price="20000"><span class="tpl-name">商品リスト導入費</span><span class="tpl-price">¥20,000</span></label>
+        <label class="tpl-item"><input type="checkbox" value="サービス年月額料金" data-price="8000"><span class="tpl-name">サービス年月額料金</span><span class="tpl-price">¥8,000</span></label>
+      </div>
+      <button class="btn btn-blue btn-sm" style="margin-top:8px;width:100%;justify-content:center" onclick="addMitTemplateItems()">＋ 添加选中项目</button>
+    </div>
+    <div class="form-group">
+      <label>見積明細</label>
+      <div class="line-items">
+        <div class="line-item-header"><span>品目</span><span>数量</span><span>単価(税抜)</span><span>割引</span><span>小計</span><span></span></div>
+        <div id="mitLineItemsBody"></div>
+        <button class="add-line-btn" onclick="addMitLineItem()">＋ 手動追加</button>
+      </div>
+    </div>
+    <div style="background:var(--paper);border-radius:6px;padding:10px 14px;font-size:13px;display:flex;justify-content:flex-end;gap:20px">
+      <span>小計: <strong id="mitModalSubtotal">¥0</strong></span>
+      <span>消費税(10%): <strong id="mitModalTax">¥0</strong></span>
+      <span>合計: <strong id="mitModalTotal" style="color:var(--accent);font-size:15px">¥0</strong></span>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('mitsumoriModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveMitsumori()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: STORE -->
 <div class="modal-overlay" id="storeModal">
   <div class="modal">
@@ -649,6 +762,7 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   if (name === 'preview') updatePreviewSelect();
   if (name === 'stores') renderStores();
+  if (name === 'mitsumori') renderMitsumori();
 }
 
 // ===== INVOICE LIST =====
@@ -769,9 +883,7 @@ function buildInvHTML(inv) {
           <div class="p-amount-label">ご請求金額（税込）</div>
           <div class="p-amount-value">¥${total.toLocaleString()}<span class="p-kiri">-</span></div>
         </div>
-        <div class="p-date-row"><span class="p-date-label">発行日：</span><span>${fmtDate(inv.due)}</span></div>
-        <div class="p-date-row"><span class="p-date-label">お支払期日：</span><span>${fmtDate(inv.due)}</span></div>
-        <div class="p-date-row"><span class="p-date-label">対象期間：</span><span>${fmtDate(inv.periodStart)} 〜 ${fmtDate(inv.periodEnd)}</span></div>
+
       </div>
 
       <!-- 右：発行会社 -->
@@ -779,13 +891,16 @@ function buildInvHTML(inv) {
         <div class="p-issuer-name">新日本富士アシスト株式会社</div>
         <div class="p-issuer-row">
           <div class="p-issuer-info">
-            〒110-0016　東京都台東区台東4-31-7-203<br>
-            TEL 03-6806-0988　FAX 03-6806-0128<br>
-            登録番号：T3010801026751
+            〒110-0016　東京都台東区台東4-31-7-203<br>TEL 03-6806-0988　FAX 03-6806-0128<br>登録番号：T3010801026751
           </div>
           <div class="p-stamp-wrap">
             <img src="data:image/png;base64,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" style="width:68px;height:68px;" alt="印章">
           </div>
+        </div>
+        <div class="p-dates-right">
+          <div class="p-date-row"><span class="p-date-label">発行日：</span>${fmtDate(inv.due)}</div>
+          <div class="p-date-row"><span class="p-date-label">支払期日：</span>${fmtDate(inv.due)}</div>
+          <div class="p-date-row"><span class="p-date-label">対象期間：</span>${fmtDate(inv.periodStart)}〜${fmtDate(inv.periodEnd)}</div>
         </div>
       </div>
 
@@ -1139,9 +1254,272 @@ function checkAutoGen() {
   saveData();
 }
 
+// ===== 見積書 =====
+let editingMitsumoriId = null;
+
+function renderMitsumori() {
+  const list = data.mitsumori || [];
+  const tbody = document.getElementById('mitsumoriTableBody');
+  const cardList = document.getElementById('mitsumoriCardList');
+
+  if (!list.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--ink-light)">見積書がありません。「＋ 新規見積書」から作成してください。</td></tr>`;
+    cardList.innerHTML = `<div class="empty-state"><div class="icon">📝</div><p>見積書がありません</p></div>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(m => {
+    const {sub,tax,total} = calcMit(m);
+    return `<tr>
+      <td><strong>No.${m.seq}</strong></td>
+      <td>${m.name}</td>
+      <td>${m.date||''}</td>
+      <td style="color:var(--accent);font-weight:700">${yen(total)}</td>
+      <td class="actions">
+        <button class="btn btn-outline btn-sm" onclick="editMitsumori('${m.id}')">編集</button>
+        <button class="btn btn-pdf btn-sm" onclick="downloadMitsumoriPDF('${m.id}')">📥PDF</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b" onclick="deleteMitsumori('${m.id}')">削除</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  cardList.innerHTML = list.map(m => {
+    const {sub,tax,total} = calcMit(m);
+    return `<div class="inv-card">
+      <div class="inv-card-header">
+        <div class="inv-card-name">No.${m.seq}　${m.name}</div>
+      </div>
+      <div class="inv-card-body">
+        <div class="inv-card-row"><label>見積日</label><span class="val">${m.date||'-'}</span></div>
+        <div class="inv-card-row"><label>小計</label><span class="val">${yen(sub)}</span></div>
+        <div class="inv-card-row"><label>消費税</label><span class="val">${yen(tax)}</span></div>
+      </div>
+      <div class="inv-card-total"><label>合計（税込）</label><span class="amount">${yen(total)}</span></div>
+      <div class="inv-card-actions">
+        <button class="btn btn-outline btn-sm" onclick="editMitsumori('${m.id}')">✏️ 編集</button>
+        <button class="btn btn-pdf btn-sm" onclick="downloadMitsumoriPDF('${m.id}')">📥 PDF</button>
+        <button class="btn btn-sm" style="background:#fee2e2;color:#991b1b" onclick="deleteMitsumori('${m.id}')">🗑 削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function calcMit(m) {
+  let sub = 0;
+  (m.lines||[]).forEach(l => { sub += Math.max(0, (l.qty||0)*(l.price||0) - (l.discount||0)); });
+  const tax = Math.floor(sub * 0.1);
+  return { sub, tax, total: sub+tax };
+}
+
+function nextMitSeq() {
+  const list = data.mitsumori || [];
+  if (!list.length) return 1;
+  return Math.max(...list.map(m => m.seq||0)) + 1;
+}
+
+function openNewMitsumori() {
+  editingMitsumoriId = null;
+  document.getElementById('mitsumoriModalTitle').textContent = '新規見積書';
+  document.getElementById('mit-name').value = '';
+  document.getElementById('mit-date').value = new Date().toISOString().slice(0,10);
+  setMitLineItems([]);
+  openModal('mitsumoriModal');
+}
+
+function editMitsumori(id) {
+  const m = (data.mitsumori||[]).find(x=>x.id===id);
+  if (!m) return;
+  editingMitsumoriId = id;
+  document.getElementById('mitsumoriModalTitle').textContent = `見積書 No.${m.seq} 編集`;
+  document.getElementById('mit-name').value = m.name;
+  document.getElementById('mit-date').value = m.date||'';
+  setMitLineItems(m.lines||[]);
+  openModal('mitsumoriModal');
+}
+
+function deleteMitsumori(id) {
+  if (!confirm('この見積書を削除しますか？')) return;
+  data.mitsumori = (data.mitsumori||[]).filter(m=>m.id!==id);
+  saveData(); renderMitsumori();
+}
+
+function addMitTemplateItems() {
+  const checked = document.querySelectorAll('#mitsumoriModal .template-items input[type="checkbox"]:checked');
+  if (!checked.length) { alert('項目を選択してください'); return; }
+  checked.forEach(cb => { addMitLineItem({name:cb.value, qty:1, price:parseInt(cb.dataset.price), discount:0}); cb.checked=false; });
+}
+
+function setMitLineItems(lines) {
+  document.getElementById('mitLineItemsBody').innerHTML = '';
+  if (lines.length) lines.forEach(l => addMitLineItem(l));
+  updateMitCalc();
+}
+
+function addMitLineItem(line) {
+  const body = document.getElementById('mitLineItemsBody');
+  const row = document.createElement('div');
+  row.className = 'mit-line-item-row';
+  row.innerHTML = `
+    <div class="mit-name-wrap">
+      <label>品目名</label>
+      <input type="text" placeholder="例：レジスター" value="${(line&&line.name)||''}" oninput="updateMitCalc()">
+    </div>
+    <div class="mit-fields">
+      <div class="field"><label>数量</label><input type="number" value="${(line&&line.qty)||1}" min="0" oninput="updateMitCalc()"></div>
+      <div class="field"><label>単価(税抜)</label><input type="number" value="${(line&&line.price)||0}" min="0" oninput="updateMitCalc()"></div>
+      <div class="field"><label>割引</label><input type="number" value="${(line&&line.discount)||0}" min="0" oninput="updateMitCalc()"></div>
+      <div class="field"><label>単位</label><input type="text" value="${(line&&line.unit)||'台'}" oninput="updateMitCalc()"></div>
+    </div>
+    <div class="mit-line-footer">
+      <span class="mit-line-total">¥0</span>
+      <button class="btn-icon" onclick="this.closest('.mit-line-item-row').remove();updateMitCalc()">×</button>
+    </div>`;
+  body.appendChild(row);
+  updateMitCalc();
+}
+
+function updateMitCalc() {
+  let sub = 0;
+  document.querySelectorAll('.mit-line-item-row').forEach(row => {
+    const inputs = row.querySelectorAll('input[type="number"]');
+    const qty = parseFloat(inputs[0].value)||0;
+    const price = parseFloat(inputs[1].value)||0;
+    const discount = parseFloat(inputs[2].value)||0;
+    const amt = Math.max(0, qty*price - discount);
+    sub += amt;
+    row.querySelector('.mit-line-total').textContent = yen(amt);
+  });
+  const tax = Math.floor(sub*0.1);
+  document.getElementById('mitModalSubtotal').textContent = yen(sub);
+  document.getElementById('mitModalTax').textContent = yen(tax);
+  document.getElementById('mitModalTotal').textContent = yen(sub+tax);
+}
+
+function saveMitsumori() {
+  const name = document.getElementById('mit-name').value.trim();
+  if (!name) { alert('宛先を入力してください'); return; }
+  const lines = [];
+  document.querySelectorAll('.mit-line-item-row').forEach(row => {
+    const textInputs = row.querySelectorAll('input[type="text"]');
+    const numInputs = row.querySelectorAll('input[type="number"]');
+    lines.push({
+      name: textInputs[0].value,
+      qty: parseFloat(numInputs[0].value)||0,
+      price: parseFloat(numInputs[1].value)||0,
+      discount: parseFloat(numInputs[2].value)||0,
+      unit: textInputs[1].value||'台'
+    });
+  });
+  if (!data.mitsumori) data.mitsumori = [];
+  const m = {
+    id: editingMitsumoriId || uid(),
+    seq: editingMitsumoriId ? (data.mitsumori.find(x=>x.id===editingMitsumoriId)||{}).seq : nextMitSeq(),
+    name, date: document.getElementById('mit-date').value, lines
+  };
+  if (editingMitsumoriId) {
+    const idx = data.mitsumori.findIndex(x=>x.id===editingMitsumoriId);
+    data.mitsumori[idx] = m;
+  } else {
+    data.mitsumori.push(m);
+  }
+  saveData(); closeModal('mitsumoriModal'); renderMitsumori();
+}
+
+function buildMitsumoriHTML(m) {
+  const {sub,tax,total} = calcMit(m);
+  const dateStr = m.date ? (()=>{ const [y,mo,d]=m.date.split('-'); return y+'年'+parseInt(mo)+'月'+parseInt(d)+'日'; })() : '';
+  const emptyRows = Math.max(0, 8-(m.lines||[]).length);
+  return `<div class="inv-page">
+    <div class="p-title">見　積　書</div>
+    <div class="p-top">
+      <div class="p-top-left">
+        <div class="p-to">${m.name} <span class="p-ochu">御中</span></div>
+        <div class="p-greeting">下記の通り御見積もり申し上げます。</div>
+        <div class="p-amount-box">
+          <div class="p-amount-label">合計金額（税込）</div>
+          <div class="p-amount-value">¥${total.toLocaleString()}<span class="p-kiri">-</span></div>
+        </div>
+      </div>
+      <div class="p-top-right">
+        <div class="p-issuer-name">新日本富士アシスト株式会社</div>
+        <div class="p-issuer-row">
+          <div class="p-issuer-info">
+            〒110-0016　東京都台東区台東4-31-7-203<br>TEL 03-6806-0988　FAX 03-6806-0128<br>携帯TEL：090-3319-1688<br>登録番号：T3010801026751
+          </div>
+        </div>
+        <div class="p-dates-right">
+          <div class="p-date-row"><span class="p-date-label">見積日：</span>${dateStr}</div>
+          <div class="p-date-row"><span class="p-date-label">見積番号：</span>No.${m.seq}</div>
+          <div class="p-date-row" style="font-size:10.5px;color:#888;margin-top:4px">本見積書の有効期限は発行日より30日間です。</div>
+        </div>
+      </div>
+    </div>
+
+    <table class="p-items">
+      <thead>
+        <tr>
+          <th style="text-align:left;width:40%">品目・内容</th>
+          <th style="text-align:center;width:8%">数量</th>
+          <th style="text-align:center;width:7%">単位</th>
+          <th style="text-align:right;width:15%">単価（税抜）</th>
+          <th style="text-align:right;width:12%">割引</th>
+          <th style="text-align:right;width:18%">小計（税抜）</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${(m.lines||[]).map(l=>{
+          const amt = Math.max(0, (l.qty||0)*(l.price||0)-(l.discount||0));
+          return `<tr>
+            <td>${l.name}</td>
+            <td style="text-align:center">${l.qty}</td>
+            <td style="text-align:center">${l.unit||'台'}</td>
+            <td style="text-align:right">${(l.price||0).toLocaleString()}</td>
+            <td style="text-align:right">${l.discount ? '-'+l.discount.toLocaleString() : '-'}</td>
+            <td style="text-align:right">${amt.toLocaleString()}</td>
+          </tr>`;
+        }).join('')}
+        ${Array(emptyRows).fill('<tr class="empty"><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('')}
+      </tbody>
+    </table>
+
+    <div class="p-subtotal-block">
+      <div class="p-subtotal-row"><span>小計</span><span>¥${sub.toLocaleString()}</span></div>
+      <div class="p-subtotal-row"><span>消費税（10%）</span><span>¥${tax.toLocaleString()}</span></div>
+      <div class="p-subtotal-row grand"><span>合計（税込）</span><span>¥${total.toLocaleString()}</span></div>
+    </div>
+
+    <div class="p-note" style="min-height:80px">
+      <div class="p-note-title">備考</div>
+      <div class="p-note-body">&nbsp;</div>
+    </div>
+  </div>`;
+}
+
+async function downloadMitsumoriPDF(id) {
+  const m = (data.mitsumori||[]).find(x=>x.id===id);
+  if (!m) return;
+  showLoading(`見積書 No.${m.seq} を生成中...`);
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const area = document.getElementById('pdfRenderArea');
+    area.innerHTML = buildMitsumoriHTML(m);
+    await new Promise(r => setTimeout(r, 300));
+    const canvas = await html2canvas(area.firstChild, { scale:2, useCORS:true, backgroundColor:'#ffffff', width:794, windowWidth:794 });
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const pdfW = doc.internal.pageSize.getWidth();
+    const pdfH = doc.internal.pageSize.getHeight();
+    doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+    const safeName = m.name.replace(/[\/\\:*?"<>|]/g,'_');
+    doc.save(`見積書_No${m.seq}_${safeName}.pdf`);
+  } catch(e) { alert('PDF生成失败：'+e.message); }
+  finally { document.getElementById('pdfRenderArea').innerHTML=''; hideLoading(); }
+}
+
 // ===== INIT =====
 function init() {
   loadData();
+  if (!data.mitsumori) { data.mitsumori = []; saveData(); }
   const now = new Date();
   document.getElementById('currentMonth').value = getMonthStr(now);
   document.getElementById('headerDate').textContent = now.getFullYear()+'年'+(now.getMonth()+1)+'月'+now.getDate()+'日';
