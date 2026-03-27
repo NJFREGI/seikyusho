@@ -479,6 +479,7 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
     <button class="btn btn-success" onclick="generateMonth()">⚡ 生成本月请求书</button>
     <button class="btn btn-primary" onclick="openNewInvoice()">＋ 新增</button>
     <button class="btn btn-pdf" onclick="openBatchDownload()">📥 批量下载PDF</button>
+    <button class="btn btn-outline" onclick="syncStoreAmounts()" title="将已生成请求书的金额同步为最新店铺设置">🔄 同步金额</button>
     <div class="stat" id="monthStat"></div>
   </div>
 
@@ -1399,6 +1400,15 @@ function saveStore() {
   if (editingStoreId) { const idx=data.stores.findIndex(s=>s.id===editingStoreId); data.stores[idx]=store; }
   else data.stores.push(store);
   saveData(); closeModal('storeModal'); renderStores();
+  // 提示同步
+  const currentMonth = document.getElementById('currentMonth').value;
+  const hasInvoices = currentMonth && data.invoices.some(i=>i.month===currentMonth && i.storeId===store.id);
+  if (hasInvoices) {
+    if (confirm('店舗情報を更新しました。\n本月の請求書の金額も同期しますか？')) {
+      document.querySelectorAll('.tab-btn')[0].click();
+      syncStoreAmounts();
+    }
+  }
 }
 
 function deleteStore(id) {
@@ -1704,6 +1714,54 @@ function batchSelectMonthly() { document.querySelectorAll('.batch-cb').forEach(c
 function batchSelectYearly() { document.querySelectorAll('.batch-cb').forEach(cb=>{ cb.checked = cb.dataset.feetype==='yearly'; }); }
 
 
+
+// ===== 同步店铺金额 =====
+function syncStoreAmounts() {
+  const month = document.getElementById('currentMonth').value;
+  const invs = data.invoices.filter(i=>i.month===month);
+  if (!invs.length) { alert('本月暂无请求书'); return; }
+
+  let updated = 0;
+  invs.forEach(inv => {
+    const store = data.stores.find(s=>s.id===inv.storeId);
+    if (!store) return;
+
+    let changed = false;
+    inv.lines = inv.lines.map(line => {
+      // 同步月額料金
+      if (line.name.includes('月額料金') && line.price !== store.monthly) {
+        changed = true;
+        return { ...line, price: store.monthly };
+      }
+      return line;
+    });
+
+    // 同步支援人数
+    const techIdx = inv.lines.findIndex(l=>l.name.includes('技能'));
+    if (store.persons > 0) {
+      if (techIdx >= 0) {
+        if (inv.lines[techIdx].qty !== store.persons) {
+          inv.lines[techIdx] = { ...inv.lines[techIdx], qty: store.persons };
+          changed = true;
+        }
+      } else {
+        inv.lines.push({ name:'特定技能支援費', qty:store.persons, price:10000 });
+        changed = true;
+      }
+    } else {
+      if (techIdx >= 0) {
+        inv.lines.splice(techIdx, 1);
+        changed = true;
+      }
+    }
+
+    if (changed) updated++;
+  });
+
+  saveData();
+  loadInvoices();
+  alert('✅ ' + updated + '件の請求書を最新の店舗情報に同期しました。');
+}
 
 // ===== INIT =====
 function init() {
