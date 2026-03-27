@@ -477,7 +477,7 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
     <input type="month" id="currentMonth" onchange="loadInvoices()">
     <button class="btn btn-success" onclick="generateMonth()">⚡ 生成本月请求书</button>
     <button class="btn btn-primary" onclick="openNewInvoice()">＋ 新增</button>
-    <button class="btn btn-pdf" onclick="downloadAllPDF()">📥 全部下载PDF</button>
+    <button class="btn btn-pdf" onclick="openBatchDownload()">📥 批量下载PDF</button>
     <div class="stat" id="monthStat"></div>
   </div>
 
@@ -555,6 +555,27 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
 </div>
 
 </main>
+
+<!-- MODAL: 批量下载 -->
+<div class="modal-overlay" id="batchModal">
+  <div class="modal">
+    <h2>批量下载PDF</h2>
+    <div style="margin-bottom:12px;font-size:13px;color:var(--ink-light)">
+      选择要下载的店铺（默认全选）
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-outline btn-sm" onclick="batchSelectAll()">全选</button>
+      <button class="btn btn-outline btn-sm" onclick="batchSelectNone()">取消全选</button>
+      <button class="btn btn-outline btn-sm" onclick="batchSelectMonthly()">月払いのみ</button>
+      <button class="btn btn-outline btn-sm" onclick="batchSelectYearly()">年払いのみ</button>
+    </div>
+    <div id="batchStoreList" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px;background:var(--paper)"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('batchModal')">取消</button>
+      <button class="btn btn-pdf" onclick="executeBatchDownload()">📥 选中店铺下载PDF</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL: INVOICE -->
 <div class="modal-overlay" id="invoiceModal">
@@ -707,6 +728,13 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
       </div>
     </div>
     <div class="form-group">
+      <label>サービス料金タイプ</label>
+      <select id="st-feetype">
+        <option value="monthly">月払い（月額料金）</option>
+        <option value="yearly">年払い（年額料金）</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label>备注</label>
       <input type="text" id="st-note" placeholder="可选">
     </div>
@@ -733,19 +761,33 @@ function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
 
 function seedDefaultData() {
   data.stores = [
-    { id:'s1',  name:'マルヤス酒場 北千住店',   monthly:9000, persons:2 },
-    { id:'s2',  name:'マルヤス酒場 船橋店',     monthly:9000, persons:2 },
-    { id:'s3',  name:'マルヤス酒場 柏店',       monthly:9000, persons:4 },
-    { id:'s4',  name:'マルヤス酒場 蒲田店',     monthly:9000, persons:1 },
-    { id:'s5',  name:'マルヤス酒場 新橋店',     monthly:9000, persons:1 },
-    { id:'s6',  name:'マルヤス酒場 西葛西店',   monthly:9000, persons:1 },
-    { id:'s7',  name:'羊炭長',                  monthly:9000, persons:5 },
-    { id:'s8',  name:'マルヤス酒場 浦安店',     monthly:9000, persons:1 },
-    { id:'s9',  name:'マルヤス酒場 神田店',     monthly:9000, persons:1 },
-    { id:'s10', name:'マルヤス酒場 日暮里店',   monthly:9000, persons:1 },
-    { id:'s11', name:'マルヤス酒場 本八幡店',   monthly:9000, persons:2 },
-    { id:'s12', name:'マルヤス酒場 御徒町店',   monthly:9000, persons:2 },
-    { id:'s13', name:'マルヤス酒場プラス 関内店', monthly:9000, persons:0 },
+    { id:'s1',  name:'マルヤス酒場 北千住店',   monthly:9000, persons:2, feeType:'monthly' },
+    { id:'s2',  name:'マルヤス酒場 船橋店',     monthly:9000, persons:2, feeType:'monthly' },
+    { id:'s3',  name:'マルヤス酒場 柏店',       monthly:9000, persons:4, feeType:'monthly' },
+    { id:'s4',  name:'マルヤス酒場 蒲田店',     monthly:9000, persons:1, feeType:'monthly' },
+    { id:'s5',  name:'マルヤス酒場 新橋店',     monthly:9000, persons:1, feeType:'monthly' },
+    { id:'s6',  name:'マルヤス酒場 西葛西店',   monthly:9000, persons:1, feeType:'monthly' },
+    { id:'s7',  name:'羊炭長',                  monthly:9000, persons:5, feeType:'monthly' },
+    { id:'s8',  name:'マルヤス酒場 浦安店',     monthly:9000, persons:1, feeType:'monthly' },
+    { id:'s9',  name:'マルヤス酒場 神田店',     monthly:9000, persons:1, feeType:'monthly' },
+    { id:'s10', name:'マルヤス酒場 日暮里店',   monthly:9000, persons:1, feeType:'monthly' },
+    { id:'s11', name:'マルヤス酒場 本八幡店',   monthly:9000, persons:2, feeType:'monthly' },
+    { id:'s12', name:'マルヤス酒場 御徒町店',   monthly:9000, persons:2, feeType:'monthly' },
+    { id:'s13', name:'マルヤス酒場プラス 関内店', monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s14', name:'一山',                    monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s15', name:'株式会社AMT',             monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s16', name:'浜の牡蠣小屋',            monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s17', name:'圓満楼',                  monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s18', name:'尚尚酒場',                monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s19', name:'立ち酔い 超人',           monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s20', name:'株式会社 五洲貿易',       monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s21', name:'京小町',                  monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s22', name:'株式会社ビックW・X',      monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s23', name:'王記厨房',                monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s24', name:'とりノ蔵 四谷店',         monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s25', name:'栞 四谷店',               monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s26', name:'あかね屋 南越谷店',       monthly:9000, persons:0, feeType:'monthly' },
+    { id:'s27', name:'株式会社宅民商事',        monthly:9000, persons:0, feeType:'monthly' },
   ];
   data.invoices = [];
   saveData();
@@ -809,7 +851,7 @@ function loadInvoices() {
   tbody.innerHTML = rows.map(({inv,sub,tax,total,pl,period,statusClass,statusLabel}) => `<tr>
     <td><strong>${inv.name}</strong></td>
     <td style="font-size:11px;color:var(--ink-light)">${period}</td>
-    <td>${pl ? pl.qty+'人' : '-'}</td>
+    <td>${pl && pl.qty > 0 ? pl.qty+'人' : '-'}</td>
     <td>${yen(sub)}</td>
     <td>${yen(tax)}</td>
     <td class="amount">${yen(total)}</td>
@@ -830,7 +872,7 @@ function loadInvoices() {
       </div>
       <div class="inv-card-body">
         <div class="inv-card-row"><label>対象期間</label><span class="val" style="font-size:12px">${period}</span></div>
-        <div class="inv-card-row"><label>支援人数</label><span class="val">${pl ? pl.qty+'人' : '-'}</span></div>
+        ${pl && pl.qty > 0 ? `<div class="inv-card-row"><label>支援人数</label><span class="val">${pl.qty}人</span></div>` : ''}
         <div class="inv-card-row"><label>小計</label><span class="val">${yen(sub)}</span></div>
         <div class="inv-card-row"><label>消費税(10%)</label><span class="val">${yen(tax)}</span></div>
       </div>
@@ -1001,7 +1043,8 @@ function printPages(pagesHTML, title) {
 function downloadOnePDF(id) {
   const inv = data.invoices.find(i=>i.id===id);
   if (!inv) return;
-  printPages(buildInvHTML(inv), '請求書_' + inv.name + '_' + inv.month);
+  const [y,m] = inv.month.split('-');
+  printPages(buildInvHTML(inv), '請求書_' + inv.name + '_' + y + '年' + parseInt(m) + '月');
 }
 
 function downloadAllPDF() {
@@ -1226,7 +1269,10 @@ function renderStores() {
   const grid = document.getElementById('storeGrid');
   grid.innerHTML = data.stores.map(s=>`
     <div class="store-card">
-      <div class="store-card-header"><div class="store-name">${s.name}</div></div>
+      <div class="store-card-header">
+        <div class="store-name">${s.name}</div>
+        <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${s.feeType==='yearly'?'#e8f4fd':'#e8f5e9'};color:${s.feeType==='yearly'?'#1565c0':'#2e7d32'}">${s.feeType==='yearly'?'年払い':'月払い'}</span>
+      </div>
       <div class="store-meta">月額料金: <strong>¥${s.monthly.toLocaleString()}</strong><br>技能支援: <strong>${s.persons}人</strong>${s.note?'<br>'+s.note:''}</div>
       <div class="store-actions">
         <button class="btn btn-outline btn-sm" onclick="editStore('${s.id}')">编辑</button>
@@ -1241,6 +1287,7 @@ function openNewStore() {
   ['st-name','st-note'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('st-monthly').value = 9000;
   document.getElementById('st-persons').value = 1;
+  document.getElementById('st-feetype').value = 'monthly';
   openModal('storeModal');
 }
 
@@ -1252,6 +1299,7 @@ function editStore(id) {
   document.getElementById('st-name').value = s.name;
   document.getElementById('st-monthly').value = s.monthly;
   document.getElementById('st-persons').value = s.persons;
+  document.getElementById('st-feetype').value = s.feeType||'monthly';
   document.getElementById('st-note').value = s.note||'';
   openModal('storeModal');
 }
@@ -1259,7 +1307,7 @@ function editStore(id) {
 function saveStore() {
   const name = document.getElementById('st-name').value.trim();
   if (!name) { alert('请输入店铺名称'); return; }
-  const store = { id:editingStoreId||uid(), name, monthly:parseFloat(document.getElementById('st-monthly').value)||9000, persons:parseInt(document.getElementById('st-persons').value)||0, note:document.getElementById('st-note').value.trim() };
+  const store = { id:editingStoreId||uid(), name, monthly:parseFloat(document.getElementById('st-monthly').value)||9000, persons:parseInt(document.getElementById('st-persons').value)||0, feeType:document.getElementById('st-feetype').value||'monthly', note:document.getElementById('st-note').value.trim() };
   if (editingStoreId) { const idx=data.stores.findIndex(s=>s.id===editingStoreId); data.stores[idx]=store; }
   else data.stores.push(store);
   saveData(); closeModal('storeModal'); renderStores();
@@ -1537,6 +1585,47 @@ function downloadMitsumoriPDF(id) {
   const m = (data.mitsumori||[]).find(x=>x.id===id);
   if (!m) return;
   printPages(buildMitsumoriHTML(m), '見積書_No' + m.seq + '_' + m.name);
+}
+
+// ===== 批量下载 =====
+function openBatchDownload() {
+  const month = document.getElementById('currentMonth').value;
+  const invs = data.invoices.filter(i=>i.month===month);
+  if (!invs.length) { alert('本月暂无请求书'); return; }
+
+  const list = document.getElementById('batchStoreList');
+  list.innerHTML = invs.map(inv => {
+    const store = (data.stores||[]).find(s=>s.id===inv.storeId);
+    const feeType = store ? store.feeType : 'monthly';
+    const badge = feeType==='yearly'
+      ? '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:#e8f4fd;color:#1565c0;margin-left:6px">年払い</span>'
+      : '<span style="font-size:10px;padding:1px 6px;border-radius:8px;background:#e8f5e9;color:#2e7d32;margin-left:6px">月払い</span>';
+    const {sub,tax,total} = calcInv(inv);
+    return `<label style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid var(--border);cursor:pointer;">
+      <input type="checkbox" class="batch-cb" data-id="${inv.id}" data-feetype="${feeType}" checked style="width:16px;height:16px;accent-color:var(--blue);flex-shrink:0">
+      <span style="flex:1;font-size:13px">${inv.name}${badge}</span>
+      <span style="font-size:12px;color:var(--accent);font-weight:600">${yen(total)}</span>
+    </label>`;
+  }).join('');
+  openModal('batchModal');
+}
+
+function batchSelectAll() { document.querySelectorAll('.batch-cb').forEach(cb=>cb.checked=true); }
+function batchSelectNone() { document.querySelectorAll('.batch-cb').forEach(cb=>cb.checked=false); }
+function batchSelectMonthly() { document.querySelectorAll('.batch-cb').forEach(cb=>{ cb.checked = cb.dataset.feetype==='monthly'; }); }
+function batchSelectYearly() { document.querySelectorAll('.batch-cb').forEach(cb=>{ cb.checked = cb.dataset.feetype==='yearly'; }); }
+
+function executeBatchDownload() {
+  const checked = [...document.querySelectorAll('.batch-cb:checked')];
+  if (!checked.length) { alert('店铺を選択してください'); return; }
+  const month = document.getElementById('currentMonth').value;
+  const [y,m] = month.split('-');
+  const monthLabel = y + '年' + parseInt(m) + '月';
+  const ids = checked.map(cb=>cb.dataset.id);
+  const invs = data.invoices.filter(i=>ids.includes(i.id));
+  const allHTML = invs.map(inv=>buildInvHTML(inv)).join('');
+  closeModal('batchModal');
+  printPages(allHTML, '請求書_' + monthLabel + '_' + checked.length + '件');
 }
 
 // ===== INIT =====
