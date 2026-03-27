@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NJF REGI 書類管理システム</title>
-<!-- PDF via print window -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap');
 
@@ -546,7 +547,7 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
     <select id="previewSelect" onchange="renderPreview()">
       <option value="">-- 请选择 --</option>
     </select>
-    <button class="btn btn-pdf" onclick="downloadSinglePDF()">📥 下载此PDF</button>
+    <button class="btn btn-pdf" onclick="downloadSinglePDFFromPreview()">📥 下载此PDF</button>
     <button class="btn btn-secondary" onclick="window.print()">🖨 打印</button>
   </div>
   <div class="preview-frame" id="previewArea">
@@ -1009,50 +1010,147 @@ function buildInvHTML(inv) {
 
 
 function showLoading(msg) {
-  document.getElementById('pdfLoadingMsg').textContent = msg || '正在生成PDF...';
+  document.getElementById('pdfLoadingMsg').textContent = msg || 'PDF生成中...';
   document.getElementById('pdfLoading').classList.add('show');
 }
-function hideLoading() { document.getElementById('pdfLoading').classList.remove('show'); }
+function hideLoading() {
+  document.getElementById('pdfLoading').classList.remove('show');
+}
 
-function getInvPageStyles() {
-  let css = '';
-  try {
-    for (let s of document.styleSheets) {
-      try {
-        for (let r of s.cssRules) {
-          if (r.cssText && /inv-page|p-title|p-top|p-items|p-subtotal|p-bank|p-note|p-issuer|p-to[^k]|p-amount|p-date|p-stamp|p-ochu|p-greeting|p-kiri/.test(r.cssText)) {
+async function renderToPDF(pagesHTML) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const pdfW = doc.internal.pageSize.getWidth();
+  const pdfH = doc.internal.pageSize.getHeight();
+
+  // Split pages (each inv-page div)
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:white;font-family:Noto Sans JP,sans-serif;';
+  document.body.appendChild(wrapper);
+
+  // Get all page HTML chunks
+  const parser = new DOMParser();
+  const doc2 = parser.parseFromString('<div>' + pagesHTML + '</div>', 'text/html');
+  const pages = doc2.querySelectorAll('.inv-page');
+
+  for (let i = 0; i < pages.length; i++) {
+    wrapper.innerHTML = '';
+    const pageEl = pages[i].cloneNode(true);
+    pageEl.style.pageBreakAfter = 'unset';
+    wrapper.appendChild(pageEl);
+
+    // Copy styles from main document
+    const styleEl = document.createElement('style');
+    let css = '';
+    try {
+      for (let s of document.styleSheets) {
+        try {
+          for (let r of s.cssRules) {
             css += r.cssText + '\n';
           }
-        }
-      } catch(e) {}
-    }
-  } catch(e) {}
-  return css;
-}
+        } catch(e) {}
+      }
+    } catch(e) {}
+    styleEl.textContent = css;
+    wrapper.prepend(styleEl);
 
-function printPages(pagesHTML, title) {
-  const win = window.open('', '_blank');
-  if (!win) {
-    alert('ポップアップがブロックされました。ブラウザの設定でポップアップを許可してください。');
-    return;
+    await new Promise(r => setTimeout(r, 200));
+
+    const canvas = await html2canvas(pageEl, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff',
+      width: 794,
+      windowWidth: 794,
+      logging: false
+    });
+
+    const imgData = canvas.toDataURL('image/jpeg', 0.92);
+    if (i > 0) doc.addPage();
+    doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
   }
-  win.document.write('<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>' + title + '</title><style>@import url(\'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap\');*{box-sizing:border-box;margin:0;padding:0;}body{font-family:\'Noto Sans JP\',sans-serif;background:white;}@media print{@page{size:A4;margin:0;}body{margin:0;}.inv-page{page-break-after:always;break-after:page;}}' + getInvPageStyles() + '</style></head><body>' + pagesHTML + '<script>window.onload=function(){setTimeout(function(){window.print();},900);};<\/script></body></html>');
-  win.document.close();
+
+  document.body.removeChild(wrapper);
+  return doc;
 }
 
-function downloadOnePDF(id) {
+async function downloadOnePDF(id) {
   const inv = data.invoices.find(i=>i.id===id);
   if (!inv) return;
   const [y,m] = inv.month.split('-');
-  printPages(buildInvHTML(inv), '請求書_' + inv.name + '_' + y + '年' + parseInt(m) + '月');
+  const monthLabel = y + '年' + parseInt(m) + '月';
+  showLoading(inv.name + ' を生成中...');
+  try {
+    const doc = await renderToPDF(buildInvHTML(inv));
+    doc.save('請求書_' + inv.name + '_' + monthLabel + '.pdf');
+  } catch(e) {
+    alert('PDF生成エラー: ' + e.message);
+  } finally {
+    hideLoading();
+  }
 }
 
-function downloadAllPDF() {
+async function downloadAllPDF() {
   const month = document.getElementById('currentMonth').value;
   const invs = data.invoices.filter(i=>i.month===month);
   if (!invs.length) { alert('本月暂无请求书'); return; }
-  const allHTML = invs.map(inv => buildInvHTML(inv)).join('');
-  printPages(allHTML, '請求書_' + month + '_全店舗');
+  const [y,m] = month.split('-');
+  const monthLabel = y + '年' + parseInt(m) + '月';
+  showLoading('全店舗 PDF生成中 (1/' + invs.length + ')...');
+  try {
+    const allHTML = invs.map(inv=>buildInvHTML(inv)).join('');
+    const doc = await renderToPDF(allHTML);
+    doc.save('請求書_' + monthLabel + '_全店舗.pdf');
+  } catch(e) {
+    alert('PDF生成エラー: ' + e.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function downloadMitsumoriPDF(id) {
+  const m = (data.mitsumori||[]).find(x=>x.id===id);
+  if (!m) return;
+  showLoading('見積書 No.' + m.seq + ' を生成中...');
+  try {
+    const doc = await renderToPDF(buildMitsumoriHTML(m));
+    doc.save('見積書_No' + m.seq + '_' + m.name + '.pdf');
+  } catch(e) {
+    alert('PDF生成エラー: ' + e.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function executeBatchDownload() {
+  const checked = [...document.querySelectorAll('.batch-cb:checked')];
+  if (!checked.length) { alert('店铺を選択してください'); return; }
+  const month = document.getElementById('currentMonth').value;
+  const [y,m] = month.split('-');
+  const monthLabel = y + '年' + parseInt(m) + '月';
+  const ids = checked.map(cb=>cb.dataset.id);
+  const invs = data.invoices.filter(i=>ids.includes(i.id));
+  closeModal('batchModal');
+  showLoading('PDF生成中 (0/' + invs.length + ')...');
+  try {
+    const allHTML = invs.map(inv=>buildInvHTML(inv)).join('');
+    const doc = await renderToPDF(allHTML);
+    doc.save('請求書_' + monthLabel + '_' + checked.length + '件.pdf');
+  } catch(e) {
+    alert('PDF生成エラー: ' + e.message);
+  } finally {
+    hideLoading();
+  }
+}
+
+async function downloadSinglePDFFromPreview() {
+  const val = document.getElementById('previewSelect').value;
+  if (!val) { alert('請求書または見積書を選択してください'); return; }
+  if (val.startsWith('inv:')) {
+    await downloadOnePDF(val.slice(4));
+  } else if (val.startsWith('mit:')) {
+    await downloadMitsumoriPDF(val.slice(4));
+  }
 }
 
 // ===== PREVIEW TAB =====
@@ -1102,17 +1200,7 @@ function previewInvoice(val) {
   renderPreview();
 }
 
-function downloadSinglePDF() {
-  const val = document.getElementById('previewSelect').value;
-  if (!val) { alert('請求書または見積書を選択してください'); return; }
-  if (val.startsWith('inv:')) {
-    const inv = data.invoices.find(i=>i.id===val.slice(4));
-    if (inv) printPages(buildInvHTML(inv), '請求書_' + inv.name);
-  } else if (val.startsWith('mit:')) {
-    const m = (data.mitsumori||[]).find(x=>x.id===val.slice(4));
-    if (m) printPages(buildMitsumoriHTML(m), '見積書_No' + m.seq + '_' + m.name);
-  }
-}
+
 
 // ===== INVOICE MODAL =====
 let editingInvoiceId = null;
@@ -1615,18 +1703,7 @@ function batchSelectNone() { document.querySelectorAll('.batch-cb').forEach(cb=>
 function batchSelectMonthly() { document.querySelectorAll('.batch-cb').forEach(cb=>{ cb.checked = cb.dataset.feetype==='monthly'; }); }
 function batchSelectYearly() { document.querySelectorAll('.batch-cb').forEach(cb=>{ cb.checked = cb.dataset.feetype==='yearly'; }); }
 
-function executeBatchDownload() {
-  const checked = [...document.querySelectorAll('.batch-cb:checked')];
-  if (!checked.length) { alert('店铺を選択してください'); return; }
-  const month = document.getElementById('currentMonth').value;
-  const [y,m] = month.split('-');
-  const monthLabel = y + '年' + parseInt(m) + '月';
-  const ids = checked.map(cb=>cb.dataset.id);
-  const invs = data.invoices.filter(i=>ids.includes(i.id));
-  const allHTML = invs.map(inv=>buildInvHTML(inv)).join('');
-  closeModal('batchModal');
-  printPages(allHTML, '請求書_' + monthLabel + '_' + checked.length + '件');
-}
+
 
 // ===== INIT =====
 function init() {
