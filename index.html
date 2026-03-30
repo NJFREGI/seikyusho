@@ -1000,6 +1000,17 @@ function buildInvHTML(inv) {
 }
 
 
+function showLoading(msg) {
+  const el = document.getElementById('pdfLoadingMsg');
+  if (el) el.textContent = msg || 'PDF生成中...';
+  const ov = document.getElementById('pdfLoading');
+  if (ov) ov.classList.add('show');
+}
+function hideLoading() {
+  const ov = document.getElementById('pdfLoading');
+  if (ov) ov.classList.remove('show');
+}
+
 async function renderToPDF(pagesHTML) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
