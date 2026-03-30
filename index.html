@@ -1024,46 +1024,52 @@ async function renderToPDF(pagesHTML) {
   const pdfW = doc.internal.pageSize.getWidth();
   const pdfH = doc.internal.pageSize.getHeight();
 
-  // Split pages (each inv-page div)
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:white;font-family:Noto Sans JP,sans-serif;';
-  document.body.appendChild(wrapper);
+  // iframe方式でレンダリング（フォント・CSSを確実に適用）
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;background:white;';
+  document.body.appendChild(iframe);
 
-  // Get all page HTML chunks
+  // 全スタイルをiframeに注入
+  let css = '';
+  try {
+    for (let s of document.styleSheets) {
+      try {
+        for (let r of s.cssRules) { css += r.cssText + '\n'; }
+      } catch(e) {}
+    }
+  } catch(e) {}
+
   const parser = new DOMParser();
-  const doc2 = parser.parseFromString('<div>' + pagesHTML + '</div>', 'text/html');
-  const pages = doc2.querySelectorAll('.inv-page');
+  const parsed = parser.parseFromString('<div>' + pagesHTML + '</div>', 'text/html');
+  const pages = [...parsed.querySelectorAll('.inv-page')];
 
   for (let i = 0; i < pages.length; i++) {
-    wrapper.innerHTML = '';
-    const pageEl = pages[i].cloneNode(true);
-    pageEl.style.pageBreakAfter = 'unset';
-    wrapper.appendChild(pageEl);
+    const pageHTML = pages[i].outerHTML;
+    iframe.contentDocument.open();
+    iframe.contentDocument.write(`<!DOCTYPE html><html><head>
+      <meta charset="UTF-8">
+      <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: white; font-family: sans-serif; }
+        ${css}
+        .inv-page { page-break-after: unset !important; }
+      </style>
+    </head><body>${pageHTML}</body></html>`);
+    iframe.contentDocument.close();
 
-    // Copy styles from main document
-    const styleEl = document.createElement('style');
-    let css = '';
-    try {
-      for (let s of document.styleSheets) {
-        try {
-          for (let r of s.cssRules) {
-            css += r.cssText + '\n';
-          }
-        } catch(e) {}
-      }
-    } catch(e) {}
-    styleEl.textContent = css;
-    wrapper.prepend(styleEl);
+    // フォント読み込み待機
+    await new Promise(r => setTimeout(r, 400));
 
-    await new Promise(r => setTimeout(r, 200));
-
-    const canvas = await html2canvas(pageEl, {
+    const el = iframe.contentDocument.querySelector('.inv-page');
+    const canvas = await html2canvas(el, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       backgroundColor: '#ffffff',
       width: 794,
       windowWidth: 794,
-      logging: false
+      logging: false,
+      foreignObjectRendering: false
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.92);
@@ -1071,7 +1077,7 @@ async function renderToPDF(pagesHTML) {
     doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
   }
 
-  document.body.removeChild(wrapper);
+  document.body.removeChild(iframe);
   return doc;
 }
 
@@ -1085,7 +1091,8 @@ async function downloadOnePDF(id) {
     const doc = await renderToPDF(buildInvHTML(inv));
     doc.save('請求書_' + inv.name + '_' + monthLabel + '.pdf');
   } catch(e) {
-    alert('PDF生成エラー: ' + e.message);
+    console.error('PDF error:', e);
+    alert('PDF生成に失敗しました。\nブラウザを更新してから再試行してください。\nエラー: ' + e.message);
   } finally {
     hideLoading();
   }
@@ -1117,7 +1124,8 @@ async function downloadMitsumoriPDF(id) {
     const doc = await renderToPDF(buildMitsumoriHTML(m));
     doc.save('見積書_No' + m.seq + '_' + m.name + '.pdf');
   } catch(e) {
-    alert('PDF生成エラー: ' + e.message);
+    console.error('PDF error:', e);
+    alert('PDF生成に失敗しました。\nブラウザを更新してから再試行してください。\nエラー: ' + e.message);
   } finally {
     hideLoading();
   }
