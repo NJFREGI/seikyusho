@@ -1555,7 +1555,7 @@ function addMitLineItem(line) {
       <div class="field"><label>数量</label><input type="number" value="${(line&&line.qty)||1}" min="0" oninput="updateMitCalc()"></div>
       <div class="field"><label>単価(税抜)</label><input type="number" value="${(line&&line.price)||0}" min="0" oninput="updateMitCalc()"></div>
       <div class="field"><label>割引</label><input type="number" value="${(line&&line.discount)||0}" min="0" oninput="updateMitCalc()"></div>
-      <div class="field"><label>単位</label><input type="text" value="${(line&&line.unit)||'台'}" oninput="updateMitCalc()"></div>
+      <div class="field"><label>単位</label><input type="text" value="${(line&&line.unit)||(line&&(line.name||'').includes('費')?'式':'台')}" oninput="updateMitCalc()"></div>
     </div>
     <div class="mit-line-footer">
       <span class="mit-line-total">¥0</span>
