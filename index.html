@@ -1687,11 +1687,6 @@ function buildMitsumoriHTML(m) {
   </div>`;
 }
 
-function downloadMitsumoriPDF(id) {
-  const m = (data.mitsumori||[]).find(x=>x.id===id);
-  if (!m) return;
-  printPages(buildMitsumoriHTML(m), '見積書_No' + m.seq + '_' + m.name);
-}
 
 // ===== 批量下载 =====
 function openBatchDownload() {
