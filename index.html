@@ -922,101 +922,83 @@ function generateMonth() {
 
 // ===== BUILD INVOICE HTML (for PDF render) =====
 function buildInvHTML(inv) {
-  const {sub,tax,total} = calcInv(inv);
-  const [y,m] = inv.month.split('-').map(Number);
+  const c = calcInv(inv);
+  const sub = c.sub, tax = c.tax, total = c.total;
+  const parts = inv.month.split('-').map(Number);
+  const y = parts[0], m = parts[1];
   const ld = lastDayOf(y,m);
   const emptyRows = Math.max(0, 8-(inv.lines||[]).length);
-  return `<div class="inv-page">
 
-    <!-- タイトル -->
-    <div class="p-title">請求書（兼領収書）</div>
+  let linesHTML = '';
+  (inv.lines||[]).forEach(function(l) {
+    linesHTML += '<tr>' +
+      '<td>' + l.name + '</td>' +
+      '<td style="text-align:center">' + l.qty + '</td>' +
+      '<td style="text-align:right">' + l.price.toLocaleString() + '</td>' +
+      '<td style="text-align:right">' + (l.qty*l.price).toLocaleString() + '</td>' +
+      '</tr>';
+  });
+  for (var i=0; i<emptyRows; i++) {
+    linesHTML += '<tr class="empty"><td>&nbsp;</td><td></td><td></td><td></td></tr>';
+  }
 
-    <!-- 上部2カラム -->
-    <div class="p-top">
+  const noteHTML = inv.note ? inv.note.replace(/\n/g,'<br>') : '&nbsp;';
+  const stampSrc = 'data:image/png;base64,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';
 
-      <!-- 左：請求先 -->
-      <div class="p-top-left">
-        <div class="p-to">${inv.name} <span class="p-ochu">御中</span></div>
-        <div class="p-greeting">下記の通りご請求申し上げます。</div>
-        <div class="p-amount-box">
-          <div class="p-amount-label">ご請求金額（税込）</div>
-          <div class="p-amount-value">¥${total.toLocaleString()}<span class="p-kiri">-</span></div>
-        </div>
-
-      </div>
-
-      <!-- 右：発行会社 -->
-      <div class="p-top-right">
-        <div class="p-issuer-name">新日本富士アシスト株式会社</div>
-        <div class="p-issuer-row">
-          <div class="p-issuer-info">
-            〒110-0016　東京都台東区台東4-31-7-203<br>TEL 03-6806-0988　FAX 03-6806-0128<br>登録番号：T3010801026751
-          </div>
-          <div class="p-stamp-wrap">
-            <img src="data:image/png;base64,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" style="width:68px;height:68px;" alt="印章">
-          </div>
-        </div>
-        <div class="p-dates-right">
-          <div class="p-date-row"><span class="p-date-label">発行日：</span>${fmtDate(inv.due)}</div>
-          <div class="p-date-row"><span class="p-date-label">支払期日：</span>${fmtDate(inv.due)}</div>
-          <div class="p-date-row"><span class="p-date-label">対象期間：</span>${fmtDate(inv.periodStart)}〜${fmtDate(inv.periodEnd)}</div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- 明細テーブル -->
-    <table class="p-items">
-      <thead>
-        <tr>
-          <th style="text-align:left;width:55%">品目・内容</th>
-          <th style="text-align:center;width:10%">数量</th>
-          <th style="text-align:right;width:17%">単価（税抜）</th>
-          <th style="text-align:right;width:18%">金額（税抜）</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${(inv.lines||[]).map(l=>`<tr>
-          <td>${l.name}</td>
-          <td style="text-align:center">${l.qty}</td>
-          <td style="text-align:right">${l.price.toLocaleString()}</td>
-          <td style="text-align:right">${(l.qty*l.price).toLocaleString()}</td>
-        </tr>`).join('')}
-        ${Array(emptyRows).fill('<tr class="empty"><td>&nbsp;</td><td></td><td></td><td></td></tr>').join('')}
-      </tbody>
-    </table>
-
-    <!-- 小計・税・合計 -->
-    <div class="p-subtotal-block">
-      <div class="p-subtotal-row"><span>小計</span><span>¥${sub.toLocaleString()}</span></div>
-      <div class="p-subtotal-row"><span>消費税（10%）</span><span>¥${tax.toLocaleString()}</span></div>
-      <div class="p-subtotal-row grand"><span>合計（税込）</span><span>¥${total.toLocaleString()}</span></div>
-    </div>
-
-    <!-- 振込先 -->
-    <div class="p-bank">
-      <div class="p-bank-title">【お振込先】</div>
-      三井住友銀行　上野支店　普通　8690693　シンニホンフジアシスト(カ<br>
-      <span style="font-size:11px">＊振込手数料はご負担にてお願い申し上げます。</span>
-    </div>
-
-    <!-- 備考 -->
-    <div class="p-note">
-      <div class="p-note-title">備考</div>
-      <div class="p-note-body">${inv.note ? inv.note.replace(/\n/g,'<br>') : '&nbsp;'}</div>
-    </div>
-
-  </div>`;
+  return '<div class="inv-page">' +
+    '<div class="p-title">請求書（兼領収書）</div>' +
+    '<div class="p-top">' +
+      '<div class="p-top-left">' +
+        '<div class="p-to">' + inv.name + ' <span class="p-ochu">御中</span></div>' +
+        '<div class="p-greeting">下記の通りご請求申し上げます。</div>' +
+        '<div class="p-amount-box">' +
+          '<div class="p-amount-label">ご請求金額（税込）</div>' +
+          '<div class="p-amount-value">¥' + total.toLocaleString() + '<span class="p-kiri">-</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="p-top-right">' +
+        '<div class="p-issuer-name">新日本富士アシスト株式会社</div>' +
+        '<div class="p-issuer-row">' +
+          '<div class="p-issuer-info">' +
+            '〒110-0016　東京都台東区台東4-31-7-203<br>TEL 03-6806-0988　FAX 03-6806-0128<br>登録番号：T3010801026751' +
+          '</div>' +
+          '<div class="p-stamp-wrap">' +
+            '<img src="' + stampSrc + '" style="width:68px;height:68px;" alt="印章">' +
+          '</div>' +
+        '</div>' +
+        '<div class="p-dates-right">' +
+          '<div class="p-date-row"><span class="p-date-label">発行日：</span>' + fmtDate(inv.due) + '</div>' +
+          '<div class="p-date-row"><span class="p-date-label">支払期日：</span>' + fmtDate(inv.due) + '</div>' +
+          '<div class="p-date-row"><span class="p-date-label">対象期間：</span>' + fmtDate(inv.periodStart) + '〜' + fmtDate(inv.periodEnd) + '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<table class="p-items">' +
+      '<thead><tr>' +
+        '<th style="text-align:left;width:55%">品目・内容</th>' +
+        '<th style="text-align:center;width:10%">数量</th>' +
+        '<th style="text-align:right;width:17%">単価（税抜）</th>' +
+        '<th style="text-align:right;width:18%">金額（税抜）</th>' +
+      '</tr></thead>' +
+      '<tbody>' + linesHTML + '</tbody>' +
+    '</table>' +
+    '<div class="p-subtotal-block">' +
+      '<div class="p-subtotal-row"><span>小計</span><span>¥' + sub.toLocaleString() + '</span></div>' +
+      '<div class="p-subtotal-row"><span>消費税（10%）</span><span>¥' + tax.toLocaleString() + '</span></div>' +
+      '<div class="p-subtotal-row grand"><span>合計（税込）</span><span>¥' + total.toLocaleString() + '</span></div>' +
+    '</div>' +
+    '<div class="p-bank">' +
+      '<div class="p-bank-title">【お振込先】</div>' +
+      '三井住友銀行　上野支店　普通　8690693　シンニホンフジアシスト(カ<br>' +
+      '<span style="font-size:11px">＊振込手数料はご負担にてお願い申し上げます。</span>' +
+    '</div>' +
+    '<div class="p-note">' +
+      '<div class="p-note-title">備考</div>' +
+      '<div class="p-note-body">' + noteHTML + '</div>' +
+    '</div>' +
+  '</div>';
 }
 
-
-function showLoading(msg) {
-  document.getElementById('pdfLoadingMsg').textContent = msg || 'PDF生成中...';
-  document.getElementById('pdfLoading').classList.add('show');
-}
-function hideLoading() {
-  document.getElementById('pdfLoading').classList.remove('show');
-}
 
 async function renderToPDF(pagesHTML) {
   const { jsPDF } = window.jspdf;
@@ -1024,12 +1006,7 @@ async function renderToPDF(pagesHTML) {
   const pdfW = doc.internal.pageSize.getWidth();
   const pdfH = doc.internal.pageSize.getHeight();
 
-  // iframe方式でレンダリング（フォント・CSSを確実に適用）
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:none;background:white;';
-  document.body.appendChild(iframe);
-
-  // 全スタイルをiframeに注入
+  // CSSを収集
   let css = '';
   try {
     for (let s of document.styleSheets) {
@@ -1039,37 +1016,56 @@ async function renderToPDF(pagesHTML) {
     }
   } catch(e) {}
 
+  // ページを分割
   const parser = new DOMParser();
   const parsed = parser.parseFromString('<div>' + pagesHTML + '</div>', 'text/html');
   const pages = [...parsed.querySelectorAll('.inv-page')];
 
+  // 非表示のdivで1枚ずつレンダリング
+  const container = document.createElement('div');
+  container.style.cssText = [
+    'position:fixed',
+    'left:-9999px',
+    'top:0',
+    'width:794px',
+    'height:1123px',
+    'background:white',
+    'overflow:hidden',
+    'z-index:-1'
+  ].join(';');
+  document.body.appendChild(container);
+
   for (let i = 0; i < pages.length; i++) {
-    const pageHTML = pages[i].outerHTML;
-    iframe.contentDocument.open();
-    iframe.contentDocument.write(`<!DOCTYPE html><html><head>
-      <meta charset="UTF-8">
-      <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: white; font-family: sans-serif; }
-        ${css}
-        .inv-page { page-break-after: unset !important; }
-      </style>
-    </head><body>${pageHTML}</body></html>`);
-    iframe.contentDocument.close();
+    // containerをクリアして1ページ分だけ入れる
+    container.innerHTML = '';
+    const pageEl = pages[i].cloneNode(true);
+    pageEl.style.cssText += ';page-break-after:unset;position:relative;';
+    container.appendChild(pageEl);
 
-    // フォント読み込み待機
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 350));
 
-    const el = iframe.contentDocument.querySelector('.inv-page');
-    const canvas = await html2canvas(el, {
+    const canvas = await html2canvas(pageEl, {
       scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       width: 794,
+      height: 1123,
       windowWidth: 794,
+      windowHeight: 1123,
+      x: 0,
+      y: 0,
+      scrollX: 0,
+      scrollY: 0,
       logging: false,
-      foreignObjectRendering: false
+      foreignObjectRendering: false,
+      onclone: function(clonedDoc) {
+        // cloneされたdocのbody以外を非表示にする
+        const body = clonedDoc.body;
+        body.style.margin = '0';
+        body.style.padding = '0';
+        body.style.background = 'white';
+      }
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.92);
@@ -1077,7 +1073,7 @@ async function renderToPDF(pagesHTML) {
     doc.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
   }
 
-  document.body.removeChild(iframe);
+  document.body.removeChild(container);
   return doc;
 }
 
@@ -1619,76 +1615,81 @@ function saveMitsumori() {
 
 function buildMitsumoriHTML(m) {
   const {sub,tax,total} = calcMit(m);
-  const dateStr = m.date ? (()=>{ const [y,mo,d]=m.date.split('-'); return y+'年'+parseInt(mo)+'月'+parseInt(d)+'日'; })() : '';
+  let dateStr = '';
+  if (m.date) {
+    const parts = m.date.split('-');
+    dateStr = parts[0] + '年' + parseInt(parts[1]) + '月' + parseInt(parts[2]) + '日';
+  }
   const emptyRows = Math.max(0, 8-(m.lines||[]).length);
-  return `<div class="inv-page">
-    <div class="p-title">見　積　書</div>
-    <div class="p-top">
-      <div class="p-top-left">
-        <div class="p-to">${m.name} <span class="p-ochu">御中</span></div>
-        <div class="p-greeting">下記の通り御見積もり申し上げます。</div>
-        <div class="p-amount-box">
-          <div class="p-amount-label">合計金額（税込）</div>
-          <div class="p-amount-value">¥${total.toLocaleString()}<span class="p-kiri">-</span></div>
-        </div>
-      </div>
-      <div class="p-top-right">
-        <div class="p-issuer-name">新日本富士アシスト株式会社</div>
-        <div class="p-issuer-row">
-          <div class="p-issuer-info">
-            〒110-0016　東京都台東区台東4-31-7-203<br>TEL 03-6806-0988　FAX 03-6806-0128<br>携帯TEL：090-3319-1688<br>登録番号：T3010801026751
-          </div>
-        </div>
-        <div class="p-dates-right">
-          <div class="p-date-row"><span class="p-date-label">見積日：</span>${dateStr}</div>
-          <div class="p-date-row"><span class="p-date-label">見積番号：</span>No.${m.seq}</div>
-          <div class="p-date-row" style="font-size:10.5px;color:#888;margin-top:4px">本見積書の有効期限は発行日より30日間です。</div>
-        </div>
-      </div>
-    </div>
 
-    <table class="p-items">
-      <thead>
-        <tr>
-          <th style="text-align:left;width:40%">品目・内容</th>
-          <th style="text-align:center;width:8%">数量</th>
-          <th style="text-align:center;width:7%">単位</th>
-          <th style="text-align:right;width:15%">単価（税抜）</th>
-          <th style="text-align:right;width:12%">割引</th>
-          <th style="text-align:right;width:18%">小計（税抜）</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${(m.lines||[]).map(l=>{
-          const amt = Math.max(0, (l.qty||0)*(l.price||0)-(l.discount||0));
-          return `<tr>
-            <td>${l.name}</td>
-            <td style="text-align:center">${l.qty}</td>
-            <td style="text-align:center">${l.unit||'台'}</td>
-            <td style="text-align:right">${(l.price||0).toLocaleString()}</td>
-            <td style="text-align:right">${l.discount ? '-'+l.discount.toLocaleString() : '-'}</td>
-            <td style="text-align:right">${amt.toLocaleString()}</td>
-          </tr>`;
-        }).join('')}
-        ${Array(emptyRows).fill('<tr class="empty"><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>').join('')}
-      </tbody>
-    </table>
+  // Build lines HTML without nested template literals
+  let linesHTML = '';
+  (m.lines||[]).forEach(function(l) {
+    const amt = Math.max(0, (l.qty||0)*(l.price||0)-(l.discount||0));
+    linesHTML += '<tr>' +
+      '<td>' + l.name + '</td>' +
+      '<td style="text-align:center">' + l.qty + '</td>' +
+      '<td style="text-align:center">' + (l.unit||'台') + '</td>' +
+      '<td style="text-align:right">' + (l.price||0).toLocaleString() + '</td>' +
+      '<td style="text-align:right">' + (l.discount ? '-'+l.discount.toLocaleString() : '-') + '</td>' +
+      '<td style="text-align:right">' + amt.toLocaleString() + '</td>' +
+      '</tr>';
+  });
+  for (var i=0; i<emptyRows; i++) {
+    linesHTML += '<tr class="empty"><td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td></tr>';
+  }
 
-    <div class="p-subtotal-block">
-      <div class="p-subtotal-row"><span>小計</span><span>¥${sub.toLocaleString()}</span></div>
-      <div class="p-subtotal-row"><span>消費税（10%）</span><span>¥${tax.toLocaleString()}</span></div>
-      <div class="p-subtotal-row grand"><span>合計（税込）</span><span>¥${total.toLocaleString()}</span></div>
-    </div>
+  const noteHTML = m.note ? m.note.replace(/\n/g,'<br>') : '&nbsp;';
 
-    <div class="p-note" style="min-height:80px">
-      <div class="p-note-title">備考</div>
-      <div class="p-note-body">${m.note ? m.note.replace(/\n/g,'<br>') : '&nbsp;'}</div>
-    </div>
-  </div>`;
+  return '<div class="inv-page">' +
+    '<div class="p-title">見　積　書</div>' +
+    '<div class="p-top">' +
+      '<div class="p-top-left">' +
+        '<div class="p-to">' + m.name + ' <span class="p-ochu">御中</span></div>' +
+        '<div class="p-greeting">下記の通り御見積もり申し上げます。</div>' +
+        '<div class="p-amount-box">' +
+          '<div class="p-amount-label">合計金額（税込）</div>' +
+          '<div class="p-amount-value">¥' + total.toLocaleString() + '<span class="p-kiri">-</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="p-top-right">' +
+        '<div class="p-issuer-name">新日本富士アシスト株式会社</div>' +
+        '<div class="p-issuer-row">' +
+          '<div class="p-issuer-info">' +
+            '〒110-0016　東京都台東区台東4-31-7-203<br>TEL 03-6806-0988　FAX 03-6806-0128<br>携帯TEL：090-3319-1688<br>登録番号：T3010801026751' +
+          '</div>' +
+        '</div>' +
+        '<div class="p-dates-right">' +
+          '<div class="p-date-row"><span class="p-date-label">見積日：</span>' + dateStr + '</div>' +
+          '<div class="p-date-row"><span class="p-date-label">見積番号：</span>No.' + m.seq + '</div>' +
+          '<div class="p-date-row" style="font-size:10.5px;color:#888;margin-top:4px">本見積書の有効期限は発行日より30日間です。</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<table class="p-items">' +
+      '<thead><tr>' +
+        '<th style="text-align:left;width:40%">品目・内容</th>' +
+        '<th style="text-align:center;width:8%">数量</th>' +
+        '<th style="text-align:center;width:7%">単位</th>' +
+        '<th style="text-align:right;width:15%">単価（税抜）</th>' +
+        '<th style="text-align:right;width:12%">割引</th>' +
+        '<th style="text-align:right;width:18%">小計（税抜）</th>' +
+      '</tr></thead>' +
+      '<tbody>' + linesHTML + '</tbody>' +
+    '</table>' +
+    '<div class="p-subtotal-block">' +
+      '<div class="p-subtotal-row"><span>小計</span><span>¥' + sub.toLocaleString() + '</span></div>' +
+      '<div class="p-subtotal-row"><span>消費税（10%）</span><span>¥' + tax.toLocaleString() + '</span></div>' +
+      '<div class="p-subtotal-row grand"><span>合計（税込）</span><span>¥' + total.toLocaleString() + '</span></div>' +
+    '</div>' +
+    '<div class="p-note" style="min-height:80px">' +
+      '<div class="p-note-title">備考</div>' +
+      '<div class="p-note-body">' + noteHTML + '</div>' +
+    '</div>' +
+  '</div>';
 }
 
 
-// ===== 批量下载 =====
 function openBatchDownload() {
   const month = document.getElementById('currentMonth').value;
   const invs = data.invoices.filter(i=>i.month===month);
