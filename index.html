@@ -721,7 +721,7 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>月額料金（円）</label>
+        <label id="st-monthly-label">サービス料金（円）</label>
         <input type="number" id="st-monthly" value="9000">
       </div>
       <div class="form-group">
@@ -730,11 +730,22 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
       </div>
     </div>
     <div class="form-group">
-      <label>サービス料金タイプ</label>
-      <select id="st-feetype">
-        <option value="monthly">月払い（月額料金）</option>
-        <option value="yearly">年払い（年額料金）</option>
+      <label>請求サイクル</label>
+      <select id="st-feetype" onchange="onFeeTypeChange()">
+        <option value="monthly">毎月請求</option>
+        <option value="quarterly">3ヶ月ごと請求</option>
+        <option value="yearly">年1回請求</option>
       </select>
+    </div>
+    <div id="st-cycle-extra" style="display:none">
+      <div class="form-group">
+        <label id="st-next-label">次回請求月（例：2026-05）</label>
+        <input type="month" id="st-next-month" placeholder="2026-05">
+      </div>
+      <div class="form-group" id="st-period-group">
+        <label>請求対象期間メモ（例：2月〜4月分）</label>
+        <input type="text" id="st-period-memo" placeholder="自動計算されます">
+      </div>
     </div>
     <div class="form-group">
       <label>备注</label>
@@ -909,15 +920,68 @@ function generateMonth() {
   const ld = lastDayOf(y,m);
   const ps = `${y}-${String(m).padStart(2,'0')}-01`;
   const pe = `${y}-${String(m).padStart(2,'0')}-${ld}`;
-  const due = `${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}-28`;
+  const today = new Date();
+  const issueDate = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const dueLd = lastDayOf(y,m);
+  const due = `${y}-${String(m).padStart(2,'0')}-${dueLd}`;
 
+  let generated = 0;
+  let skipped = 0;
   data.stores.forEach(s => {
-    const lines = [{ name:`${y}.${m}.1-${y}.${m}.${ld} 月額料金`, qty:1, price:s.monthly }];
+    const feeType = s.feeType || 'monthly';
+
+    // 判断本月是否需要生成
+    if (feeType !== 'monthly') {
+      const nextM = s.nextMonth; // e.g. "2026-05"
+      if (!nextM) { skipped++; return; } // 没设置下次月份则跳过
+      if (nextM !== month) { skipped++; return; } // 不是请求月份则跳过
+    }
+
+    // 计算对象期间
+    let periodStart = ps, periodEnd = pe, lineName = '';
+
+    // フォーマット: YYYY.MM.DD
+    function fmtD(yy, mm, dd) {
+      return yy + '.' + String(mm).padStart(2,'0') + '.' + String(dd).padStart(2,'0');
+    }
+
+    if (feeType === 'monthly') {
+      // 毎月：当月1日〜末日 サービス料金
+      lineName = fmtD(y,m,1) + '-' + fmtD(y,m,ld) + ' サービス料金';
+    } else if (feeType === 'quarterly') {
+      // 3ヶ月：3ヶ月前の1日〜当月末日
+      let startM = m - 2, startY = y;
+      if (startM <= 0) { startM += 12; startY -= 1; }
+      const startLd = lastDayOf(startY, startM);
+      periodStart = `${startY}-${String(startM).padStart(2,'0')}-01`;
+      lineName = fmtD(startY,startM,1) + '-' + fmtD(y,m,ld) + ' サービス料金';
+    } else if (feeType === 'yearly') {
+      // 年間：1年前の翌月1日〜当月末日
+      let startM = m + 1, startY = y - 1;
+      if (startM > 12) { startM -= 12; startY += 1; }
+      periodStart = `${startY}-${String(startM).padStart(2,'0')}-01`;
+      lineName = fmtD(startY,startM,1) + '-' + fmtD(y,m,ld) + ' サービス料金';
+    }
+
+    const lines = [{ name:lineName, qty:1, price:s.monthly }];
     if (s.persons>0) lines.push({ name:'特定技能支援費', qty:s.persons, price:10000 });
-    data.invoices.push({ id:uid(), month, name:s.name, storeId:s.id, periodStart:ps, periodEnd:pe, due, lines, status:'pending' });
+    data.invoices.push({ id:uid(), month, name:s.name, storeId:s.id, periodStart, periodEnd:pe, due, issueDate, lines, status:'pending' });
+    generated++;
+
+    // 更新下次请求月份
+    if (feeType === 'quarterly') {
+      const nm = m + 3 > 12 ? m - 9 : m + 3;
+      const ny = m + 3 > 12 ? y + 1 : y;
+      s.nextMonth = `${ny}-${String(nm).padStart(2,'0')}`;
+    } else if (feeType === 'yearly') {
+      s.nextMonth = `${y+1}-${String(m).padStart(2,'0')}`;
+    }
   });
+
   saveData(); loadInvoices();
-  alert(`✅ 已生成 ${data.stores.length} 件请求书！`);
+  let msg = `✅ ${generated}件の請求書を生成しました。`;
+  if (skipped > 0) msg += `\n（${skipped}件は請求サイクル外のためスキップ）`;
+  alert(msg);
 }
 
 // ===== BUILD INVOICE HTML (for PDF render) =====
@@ -967,7 +1031,7 @@ function buildInvHTML(inv) {
           '</div>' +
         '</div>' +
         '<div class="p-dates-right">' +
-          '<div class="p-date-row"><span class="p-date-label">発行日：</span>' + fmtDate(inv.due) + '</div>' +
+          '<div class="p-date-row"><span class="p-date-label">発行日：</span>' + fmtDate(inv.issueDate||inv.due) + '</div>' +
           '<div class="p-date-row"><span class="p-date-label">支払期日：</span>' + fmtDate(inv.due) + '</div>' +
           '<div class="p-date-row"><span class="p-date-label">対象期間：</span>' + fmtDate(inv.periodStart) + '〜' + fmtDate(inv.periodEnd) + '</div>' +
         '</div>' +
@@ -1235,7 +1299,7 @@ function openNewInvoice() {
     const ld = lastDayOf(y,m);
     document.getElementById('inv-period-start').value = `${y}-${String(m).padStart(2,'0')}-01`;
     document.getElementById('inv-period-end').value = `${y}-${String(m).padStart(2,'0')}-${ld}`;
-    document.getElementById('inv-due').value = `${m===12?y+1:y}-${String(m===12?1:m+1).padStart(2,'0')}-28`;
+    document.getElementById('inv-due').value = `${y}-${String(m).padStart(2,'0')}-${ld}`;
   }
   setLineItems([{name:'月額料金',qty:1,price:9000},{name:'特定技能支援費',qty:1,price:10000}]);
   document.getElementById('inv-note').value = '';
@@ -1375,7 +1439,7 @@ function renderStores() {
     <div class="store-card">
       <div class="store-card-header">
         <div class="store-name">${s.name}</div>
-        <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${s.feeType==='yearly'?'#e8f4fd':'#e8f5e9'};color:${s.feeType==='yearly'?'#1565c0':'#2e7d32'}">${s.feeType==='yearly'?'年払い':'月払い'}</span>
+        <span style="font-size:10px;padding:2px 7px;border-radius:8px;background:${s.feeType==='yearly'?'#e8f4fd':s.feeType==='quarterly'?'#fff3e0':'#e8f5e9'};color:${s.feeType==='yearly'?'#1565c0':s.feeType==='quarterly'?'#e65100':'#2e7d32'}">${s.feeType==='yearly'?'年1回':s.feeType==='quarterly'?'3ヶ月':'毎月'}</span>${s.feeType!=='monthly'&&s.nextMonth?'<br><span style="font-size:10px;color:#888">次回: '+s.nextMonth+'</span>':''}
       </div>
       <div class="store-meta">月額料金: <strong>¥${s.monthly.toLocaleString()}</strong><br>技能支援: <strong>${s.persons}人</strong>${s.note?'<br>'+s.note:''}</div>
       <div class="store-actions">
@@ -1392,6 +1456,8 @@ function openNewStore() {
   document.getElementById('st-monthly').value = 9000;
   document.getElementById('st-persons').value = 1;
   document.getElementById('st-feetype').value = 'monthly';
+  onFeeTypeChange();
+  document.getElementById('st-next-month').value = '';
   openModal('storeModal');
 }
 
@@ -1405,13 +1471,17 @@ function editStore(id) {
   document.getElementById('st-persons').value = s.persons;
   document.getElementById('st-feetype').value = s.feeType||'monthly';
   document.getElementById('st-note').value = s.note||'';
+  onFeeTypeChange();
+  if (s.nextMonth) document.getElementById('st-next-month').value = s.nextMonth;
   openModal('storeModal');
 }
 
 function saveStore() {
   const name = document.getElementById('st-name').value.trim();
   if (!name) { alert('请输入店铺名称'); return; }
-  const store = { id:editingStoreId||uid(), name, monthly:parseFloat(document.getElementById('st-monthly').value)||9000, persons:parseInt(document.getElementById('st-persons').value)||0, feeType:document.getElementById('st-feetype').value||'monthly', note:document.getElementById('st-note').value.trim() };
+  const feeType = document.getElementById('st-feetype').value||'monthly';
+  const nextMonth = feeType!=='monthly' ? document.getElementById('st-next-month').value : '';
+  const store = { id:editingStoreId||uid(), name, monthly:parseFloat(document.getElementById('st-monthly').value)||9000, persons:parseInt(document.getElementById('st-persons').value)||0, feeType, nextMonth, note:document.getElementById('st-note').value.trim() };
   if (editingStoreId) { const idx=data.stores.findIndex(s=>s.id===editingStoreId); data.stores[idx]=store; }
   else data.stores.push(store);
   saveData(); closeModal('storeModal'); renderStores();
@@ -1776,6 +1846,37 @@ function syncStoreAmounts() {
   saveData();
   loadInvoices();
   alert('✅ ' + updated + '件の請求書を最新の店舗情報に同期しました。');
+}
+
+// ===== 請求サイクル切替 =====
+function onFeeTypeChange() {
+  const ft = document.getElementById('st-feetype').value;
+  const extra = document.getElementById('st-cycle-extra');
+  const nextLabel = document.getElementById('st-next-label');
+  const monthlyLabel = document.getElementById('st-monthly-label');
+
+  // サービス料金ラベル切替
+  if (monthlyLabel) {
+    if (ft === 'monthly') {
+      monthlyLabel.textContent = 'サービス料金 月額（円）';
+    } else if (ft === 'quarterly') {
+      monthlyLabel.textContent = 'サービス料金 3ヶ月分（円）';
+    } else {
+      monthlyLabel.textContent = 'サービス料金 年間（円）';
+    }
+  }
+
+  // 次回請求月の表示切替
+  if (ft === 'monthly') {
+    extra.style.display = 'none';
+  } else {
+    extra.style.display = 'block';
+    if (ft === 'quarterly') {
+      nextLabel.textContent = '次回請求月（3ヶ月ごと・例：2026-05）';
+    } else {
+      nextLabel.textContent = '次回請求月（年1回・例：2026-12）';
+    }
+  }
 }
 
 // ===== INIT =====
