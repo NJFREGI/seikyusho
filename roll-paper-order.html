@@ -1,292 +1,690 @@
-import React, { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Mail, Printer } from "lucide-react";
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ロール紙注文書</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+      background: #e5e5e5;
+      color: #000;
+    }
+    .page-wrap {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 12px;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .btn-mail {
+      background: #111827;
+      color: #fff;
+    }
+    .btn-print {
+      background: #e5e7eb;
+      color: #111827;
+    }
 
-const PRODUCTS = [
-  {
-    code: "2443-88",
-    name1: "80mm×80Φ×12mm",
-    name2: "75μ 1巻 PP",
-    rollsPerBox: 20,
-    unitPrice: 161,
-    salePrice: 3542,
-  },
-  {
-    code: "75-88",
-    name1: "80mm×80Φ×12mm",
-    name2: "75μ 1巻 PP",
-    rollsPerBox: 48,
-    unitPrice: 118,
-    salePrice: 6230,
-  },
-];
+    .sheet {
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+      padding: 20px 18px 24px;
+    }
 
-const ORDER_FROM = {
-  customerCode: "6831",
-  merchantName: "金澤企画国際株式会社",
-  zip: "110-0016",
-  address1: "東京都台東区台東 4-31-7-203",
-  tel: "03-6806-0988",
-  fax: "03-6806-0128",
-  contactPerson: "",
-};
+    .top-title {
+      text-align: center;
+      font-weight: 700;
+      line-height: 1.5;
+      font-size: 18px;
+    }
+    .fax-line {
+      margin-top: 6px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-weight: 700;
+    }
+    .fax-line .tel {
+      font-size: 17px;
+    }
+    .fax-line .fax {
+      font-size: 34px;
+      font-weight: 900;
+    }
+    .main-title {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 44px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      line-height: 1.2;
+    }
+    .info-block {
+      margin-top: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.8;
+    }
+    .product-head {
+      margin-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .product-head .left {
+      font-size: 28px;
+      font-weight: 900;
+    }
+    .product-head .right {
+      font-size: 18px;
+      font-weight: 700;
+    }
 
-const todayParts = () => {
-  const d = new Date();
-  return {
-    year: String(d.getFullYear()),
-    month: String(d.getMonth() + 1),
-    day: String(d.getDate()),
-  };
-};
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 8px 6px;
+      text-align: center;
+      vertical-align: middle;
+      font-size: 15px;
+    }
+    th {
+      font-weight: 900;
+      background: #fff;
+    }
+    td.code,
+    td.rolls,
+    td.unit,
+    td.price {
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    td.spec {
+      line-height: 1.6;
+    }
+    .qty-cell {
+      min-width: 120px;
+    }
+    .qty-box-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .qty-input {
+      width: 70px;
+      height: 38px;
+      border: 1px solid #000;
+      border-radius: 0;
+      text-align: center;
+      font-size: 18px;
+      background: #fff;
+    }
+    .qty-unit {
+      font-weight: 700;
+      font-size: 18px;
+    }
 
-const currency = (value: number) => `¥${value.toLocaleString("ja-JP")}`;
+    .shipping-note {
+      margin-top: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.7;
+    }
+    .order-way {
+      margin-top: 18px;
+      line-height: 1.5;
+      font-weight: 900;
+    }
+    .order-way .fax-big {
+      font-size: 34px;
+    }
+    .order-way .mail-big {
+      font-size: 30px;
+    }
+    .order-way .pay-title {
+      margin-top: 8px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .order-way .pay-main {
+      font-size: 22px;
+    }
+    .order-way .pay-sub {
+      font-size: 16px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
 
-export default function ThermalPaperOrderWebapp() {
-  const [form, setForm] = useState({
-    deliverToName: "",
-    deliverZip: "",
-    deliverAddress: "",
-    deliverTel: "",
-    deliverFax: "",
-    deliverContact: "",
-    qty244388: "",
-    qty7588: "",
-    note: "",
-  });
+    .form-box {
+      margin-top: 16px;
+      border: 1px solid #000;
+    }
+    .form-box .date-row {
+      border-bottom: 1px solid #000;
+      text-align: center;
+      font-weight: 900;
+      font-size: 24px;
+      padding: 10px 8px;
+      line-height: 1.8;
+    }
+    .date-part {
+      display: inline-block;
+      min-width: 72px;
+      text-align: center;
+    }
+    .from-box {
+      border-bottom: 1px solid #000;
+      padding: 16px 18px;
+      font-size: 18px;
+      line-height: 1.9;
+    }
+    .from-indent {
+      padding-left: 108px;
+    }
+    .to-box {
+      padding: 16px 18px;
+      font-size: 18px;
+      line-height: 1.9;
+    }
 
-  const update = (key: string, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
+    .line-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .line-field.top {
+      align-items: flex-start;
+    }
+    .line-label {
+      min-width: 108px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .line-input {
+      flex: 1;
+      border: 0;
+      border-bottom: 1px solid #000;
+      border-radius: 0;
+      background: transparent;
+      padding: 6px 4px;
+      font-size: 16px;
+      outline: none;
+    }
+    .zip-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .zip-mark {
+      font-weight: 700;
+    }
+    .addr-wrap {
+      flex: 1;
+    }
+    .line-textarea {
+      width: 100%;
+      min-height: 70px;
+      border: 0;
+      border-bottom: 1px solid #000;
+      border-radius: 0;
+      background: transparent;
+      padding: 6px 4px;
+      font-size: 16px;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+    }
 
-  const totals = useMemo(() => {
-    const q1 = Number(form.qty244388 || 0);
-    const q2 = Number(form.qty7588 || 0);
-    return {
-      totalBoxes: q1 + q2,
-      totalAmount: q1 * PRODUCTS[0].salePrice + q2 * PRODUCTS[1].salePrice,
-    };
-  }, [form.qty244388, form.qty7588]);
+    .note-box {
+      margin-top: 16px;
+      border-top: 1px dashed #bbb;
+      padding-top: 12px;
+      font-size: 14px;
+      line-height: 1.9;
+      color: #444;
+    }
+    .note-title {
+      margin-top: 8px;
+      font-weight: 700;
+    }
+    .note-textarea {
+      width: 100%;
+      min-height: 78px;
+      margin-top: 8px;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      font-size: 14px;
+      font-family: inherit;
+    }
 
-  const date = todayParts();
+    .footer {
+      margin-top: 18px;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.8;
+    }
 
-  const emailSubject = `${ORDER_FROM.merchantName}【ロール紙注文】`;
-  const emailBody = [
-    "ロール紙注文依頼",
-    "",
-    `発注日：${date.year}年 ${date.month}月 ${date.day}日`,
-    `お客様コード：${ORDER_FROM.customerCode}`,
-    `発注元会社名：${ORDER_FROM.merchantName}`,
-    `発注元住所：〒${ORDER_FROM.zip}`,
-    `${ORDER_FROM.address1}`,
-    `発注元TEL：${ORDER_FROM.tel}`,
-    `発注元FAX：${ORDER_FROM.fax}`,
-    `発注元担当者：${ORDER_FROM.contactPerson || ""}`,
-    "",
-    "【お届け先】",
-    `御会社名：${form.deliverToName || ""}`,
-    `郵便番号：${form.deliverZip || ""}`,
-    `御住所：${form.deliverAddress || ""}`,
-    `TEL：${form.deliverTel || ""}`,
-    `FAX：${form.deliverFax || ""}`,
-    `御担当者：${form.deliverContact || ""}`,
-    "",
-    `2443-88：${form.qty244388 || 0}箱`,
-    `75-88：${form.qty7588 || 0}箱`,
-    `合計箱数：${totals.totalBoxes}箱`,
-    `合計金額：${currency(totals.totalAmount)}`,
-    `備考：${form.note || ""}`,
-  ].join("\\n");
+    @media (max-width: 768px) {
+      .sheet {
+        padding: 14px 10px 18px;
+      }
+      .top-title {
+        font-size: 15px;
+      }
+      .fax-line .tel {
+        font-size: 14px;
+      }
+      .fax-line .fax {
+        font-size: 24px;
+      }
+      .main-title {
+        font-size: 28px;
+      }
+      .info-block {
+        font-size: 13px;
+      }
+      .product-head .left {
+        font-size: 20px;
+      }
+      .product-head .right {
+        font-size: 14px;
+      }
+      th, td {
+        font-size: 12px;
+        padding: 6px 4px;
+      }
+      .qty-input {
+        width: 56px;
+        height: 34px;
+        font-size: 16px;
+      }
+      .qty-unit {
+        font-size: 16px;
+      }
+      .shipping-note {
+        font-size: 12px;
+      }
+      .order-way .fax-big {
+        font-size: 23px;
+      }
+      .order-way .mail-big {
+        font-size: 20px;
+      }
+      .order-way .pay-title {
+        font-size: 15px;
+      }
+      .order-way .pay-main {
+        font-size: 18px;
+      }
+      .order-way .pay-sub {
+        font-size: 13px;
+      }
+      .form-box .date-row {
+        font-size: 18px;
+      }
+      .date-part {
+        min-width: 52px;
+      }
+      .from-box,
+      .to-box {
+        font-size: 14px;
+        line-height: 1.8;
+        padding: 12px 10px;
+      }
+      .from-indent {
+        padding-left: 78px;
+      }
+      .line-field {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+      }
+      .line-label {
+        min-width: auto;
+      }
+      .line-input,
+      .line-textarea {
+        font-size: 15px;
+      }
+      .footer {
+        font-size: 13px;
+      }
+    }
 
-  const mailtoHref = `mailto:info@gm-life.co.jp?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    @media print {
+      body {
+        background: #fff !important;
+      }
+      .page-wrap {
+        max-width: 100%;
+        padding: 0;
+      }
+      .toolbar,
+      .note-box {
+        display: none !important;
+      }
+      .sheet {
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 16px 10px 18px;
+      }
+      input, textarea {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        background: transparent !important;
+      }
+      .qty-input {
+        border: 1px solid #000 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="toolbar">
+      <a class="btn btn-mail" id="mailBtn" href="javascript:void(0)">✉ 转发邮件下单</a>
+      <button class="btn btn-print" type="button" onclick="window.print()">🖨 打印 / 传真</button>
+    </div>
 
-  const fieldClass =
-    "h-8 rounded-none border-0 border-b border-black bg-transparent px-1 py-0 text-[15px] focus-visible:ring-0 focus-visible:ring-offset-0";
+    <div class="sheet">
+      <div class="top-title">
+        <div>たすかるねっと（株）ジーエムライフサポート　サプライセンター行</div>
+        <div class="fax-line">
+          <span class="tel">TEL：03(3363)2161</span>
+          <span class="fax">FAX：03-3363-2195</span>
+        </div>
+      </div>
 
-  return (
-    <div className="min-h-screen bg-[#e5e5e5] p-3 md:p-6">
-      <style>{`
-        @media print {
-          body { background: white !important; }
-          .no-print { display: none !important; }
-          .print-sheet {
-            box-shadow: none !important;
-            margin: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-          }
-          input, textarea {
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-            background: transparent !important;
-          }
-          .print-box-input {
-            border: 1px solid #000 !important;
-          }
-        }
-      `}</style>
+      <div class="main-title">ロール紙注文書</div>
 
-      <div className="mx-auto max-w-[980px]">
-        <div className="no-print mb-4 flex flex-wrap gap-3">
-          <Button asChild className="rounded-xl">
-            <a href={mailtoHref}>
-              <Mail className="mr-2 h-4 w-4" /> 转发邮件下单
-            </a>
-          </Button>
-          <Button variant="secondary" className="rounded-xl" onClick={() => window.print()}>
-            <Printer className="mr-2 h-4 w-4" /> 打印 / 传真
-          </Button>
+      <div class="info-block">
+        <div>注文方法 ⇒ ご注文はこの注文書で FAX または、メールにてお願いします。</div>
+        <div>消 費 税 ⇒ 販売価格に含まれています。</div>
+        <div>
+          納　　期 ⇒ 平日午後２時までのご注文…当日出荷<br>
+          <span style="padding-left:84px;">平日午後２時以降、土・日・祝日のご注文…翌営業日の出荷</span>
+        </div>
+      </div>
+
+      <div class="product-head">
+        <div class="left">POS 用感熱レジロール紙</div>
+        <div class="right">2023 年 6 月 ver.</div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>商品コード</th>
+            <th>品名・規格</th>
+            <th>箱入数</th>
+            <th>単 価</th>
+            <th>販 売 価 格</th>
+            <th>ご 注 文 数</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="code">2443-88</td>
+            <td class="spec">
+              <div>80mm×80Φ×12mm</div>
+              <div>75μ 1巻 PP</div>
+            </td>
+            <td class="rolls">20 巻</td>
+            <td class="unit">161 円</td>
+            <td class="price">3,542 円</td>
+            <td class="qty-cell">
+              <div class="qty-box-wrap">
+                <input id="qty244388" class="qty-input" type="number" min="0" value="">
+                <span class="qty-unit">箱</span>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td class="code">75-88</td>
+            <td class="spec">
+              <div>80mm×80Φ×12mm</div>
+              <div>75μ 1巻 PP</div>
+            </td>
+            <td class="rolls">48 巻</td>
+            <td class="unit">118 円</td>
+            <td class="price">6,230 円</td>
+            <td class="qty-cell">
+              <div class="qty-box-wrap">
+                <input id="qty7588" class="qty-input" type="number" min="0" value="">
+                <span class="qty-unit">箱</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="shipping-note">
+        ●全国送料無料　※但し、北海道 198 円(税込2198-88)、沖縄離島別送料がかかります。
+      </div>
+
+      <div class="order-way">
+        <div class="fax-big">ご注文は FAX で ⇨ 03-3363-2195</div>
+        <div class="mail-big">メールのご注文は ⇨ info@gm-life.co.jp</div>
+        <div class="pay-title">お支払方法</div>
+        <div class="pay-main">月末締め翌月末払い</div>
+        <div class="pay-sub">請求書は、弊社より下記ご住所【6831】宛、郵送致します。</div>
+      </div>
+
+      <div class="form-box">
+        <div class="date-row">
+          発　注　日 ：
+          <span class="date-part" id="yearPart"></span> 年
+          <span class="date-part" id="monthPart"></span> 月
+          <span class="date-part" id="dayPart"></span> 日
         </div>
 
-        <div className="print-sheet mx-auto bg-white px-6 py-5 text-black shadow-xl md:px-10 md:py-8">
-          <div className="text-center text-[18px] font-bold leading-tight md:text-[22px]">
-            <div>たすかるねっと（株）ジーエムライフサポート　サプライセンター行</div>
-            <div className="mt-1 flex items-end justify-center gap-8 text-[20px] md:text-[26px]">
-              <span className="text-[16px] md:text-[18px]">TEL：03(3363)2161</span>
-              <span className="text-[28px] font-black md:text-[44px]">FAX：03-3363-2195</span>
+        <div class="from-box">
+          <div>【お客様コード　6831】</div>
+          <div>御会社名 ： 金澤企画国際株式会社</div>
+          <div>御 住 所 ： 〒110-0016</div>
+          <div class="from-indent">東京都台東区台東 4-31-7-203</div>
+          <div>ＴＥＬ ： 03-6806-0988</div>
+          <div>ＦＡＸ ： 03-6806-0128</div>
+          <div>御担当者 ： </div>
+        </div>
+
+        <div class="to-box">
+          <div>【お届け先】【納品先コード　　　　　】</div>
+
+          <div class="line-field">
+            <span class="line-label">御会社名：</span>
+            <input id="deliverToName" class="line-input" type="text">
+          </div>
+
+          <div class="line-field top">
+            <span class="line-label">御 住 所：</span>
+            <div class="addr-wrap">
+              <div class="zip-wrap">
+                <span class="zip-mark">〒</span>
+                <input id="deliverZip" class="line-input" type="text">
+              </div>
+              <textarea id="deliverAddress" class="line-textarea"></textarea>
             </div>
           </div>
 
-          <div className="mt-3 text-center text-[34px] font-black tracking-tight md:text-[70px]">
-            ロール紙注文書
+          <div class="line-field">
+            <span class="line-label">ＴＥＬ：</span>
+            <input id="deliverTel" class="line-input" type="text">
           </div>
 
-          <div className="mt-2 space-y-1 text-[14px] font-semibold leading-6 md:text-[18px]">
-            <div>注文方法 ⇒ ご注文はこの注文書で FAX または、メールにてお願いします。</div>
-            <div>消 費 税 ⇒ 販売価格に含まれています。</div>
-            <div>
-              納　　期 ⇒ 平日午後２時までのご注文…当日出荷
-              <br />
-              <span className="pl-[84px]">平日午後２時以降、土・日・祝日のご注文…翌営業日の出荷</span>
-            </div>
+          <div class="line-field">
+            <span class="line-label">ＦＡＸ：</span>
+            <input id="deliverFax" class="line-input" type="text">
           </div>
 
-          <div className="mt-5 flex items-end justify-between">
-            <div className="text-[24px] font-black md:text-[34px]">POS 用感熱レジロール紙</div>
-            <div className="text-[18px] font-bold">2023 年 6 月 ver.</div>
-          </div>
-
-          <table className="mt-2 w-full border-collapse text-center text-[16px] md:text-[18px]">
-            <thead>
-              <tr>
-                <th className="border border-black px-2 py-1 font-bold">商品コード</th>
-                <th className="border border-black px-2 py-1 font-bold">品名・規格</th>
-                <th className="border border-black px-2 py-1 font-bold">箱入数</th>
-                <th className="border border-black px-2 py-1 font-bold">単 価</th>
-                <th className="border border-black px-2 py-1 font-bold">販 売 価 格</th>
-                <th className="border border-black px-2 py-1 font-bold">ご 注 文 数</th>
-              </tr>
-            </thead>
-            <tbody>
-              {PRODUCTS.map((item, idx) => {
-                const key = idx === 0 ? "qty244388" : "qty7588";
-                return (
-                  <tr key={item.code}>
-                    <td className="border border-black px-2 py-3 font-bold">{item.code}</td>
-                    <td className="border border-black px-2 py-2 leading-7">
-                      <div>{item.name1}</div>
-                      <div>{item.name2}</div>
-                    </td>
-                    <td className="border border-black px-2 py-3 font-bold">{item.rollsPerBox} 巻</td>
-                    <td className="border border-black px-2 py-3 font-bold">{item.unitPrice} 円</td>
-                    <td className="border border-black px-2 py-3 font-bold">{item.salePrice.toLocaleString("ja-JP")} 円</td>
-                    <td className="border border-black px-2 py-2">
-                      <div className="flex items-center justify-center gap-2">
-                        <Input
-                          type="number"
-                          min="0"
-                          value={form[key as keyof typeof form] as string}
-                          onChange={(e) => update(key, e.target.value)}
-                          className="print-box-input h-10 w-20 rounded-none border border-black text-center text-[18px]"
-                        />
-                        <span className="text-[18px] font-bold">箱</span>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          <div className="mt-2 text-[16px] font-bold md:text-[18px]">
-            ●全国送料無料　※但し、北海道 198 円(税込2198-88)、沖縄離島別送料がかかります。
-          </div>
-
-          <div className="mt-5 space-y-1 font-black leading-tight">
-            <div className="text-[28px] md:text-[38px]">ご注文は FAX で ⇨ 03-3363-2195</div>
-            <div className="text-[24px] md:text-[34px]">メールのご注文は ⇨ info@gm-life.co.jp</div>
-            <div className="mt-2 text-[18px] font-bold md:text-[20px]">お支払方法</div>
-            <div className="text-[18px] font-black md:text-[22px]">月末締め翌月末払い</div>
-            <div className="text-[14px] font-bold md:text-[18px]">請求書は、弊社より下記ご住所【6831】宛、郵送致します。</div>
-          </div>
-
-          <div className="mt-4 border border-black">
-            <div className="border-b border-black px-4 py-2 text-center text-[22px] font-black md:text-[30px]">
-              発　注　日 ：
-              <span className="inline-block min-w-[90px] text-center">{date.year}</span> 年
-              <span className="inline-block min-w-[60px] text-center">{date.month}</span> 月
-              <span className="inline-block min-w-[60px] text-center">{date.day}</span> 日
-            </div>
-
-            <div className="border-b border-black px-6 py-5 text-[16px] leading-10 md:text-[20px]">
-              <div>【お客様コード　{ORDER_FROM.customerCode}】</div>
-              <div>御会社名 ： {ORDER_FROM.merchantName}</div>
-              <div>御 住 所 ： 〒{ORDER_FROM.zip}</div>
-              <div className="pl-[116px] md:pl-[132px]">{ORDER_FROM.address1}</div>
-              <div>ＴＥＬ ： {ORDER_FROM.tel}</div>
-              <div>ＦＡＸ ： {ORDER_FROM.fax}</div>
-              <div>御担当者 ： {ORDER_FROM.contactPerson}</div>
-            </div>
-
-            <div className="px-6 py-5 text-[16px] leading-10 md:text-[20px]">
-              <div>【お届け先】【納品先コード　　　　　】</div>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="min-w-[108px]">御会社名：</span>
-                <Input value={form.deliverToName} onChange={(e) => update("deliverToName", e.target.value)} className={fieldClass} />
-              </div>
-              <div className="mt-2 flex items-start gap-2">
-                <span className="min-w-[108px] pt-1">御 住 所：</span>
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span>〒</span>
-                    <Input value={form.deliverZip} onChange={(e) => update("deliverZip", e.target.value)} className={fieldClass} />
-                  </div>
-                  <Textarea value={form.deliverAddress} onChange={(e) => update("deliverAddress", e.target.value)} className="min-h-[64px] rounded-none border-0 border-b border-black bg-transparent px-1 py-1 text-[15px] focus-visible:ring-0 focus-visible:ring-offset-0" />
-                </div>
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="min-w-[108px]">ＴＥＬ：</span>
-                <Input value={form.deliverTel} onChange={(e) => update("deliverTel", e.target.value)} className={fieldClass} />
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="min-w-[108px]">ＦＡＸ：</span>
-                <Input value={form.deliverFax} onChange={(e) => update("deliverFax", e.target.value)} className={fieldClass} />
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="min-w-[108px]">御担当者：</span>
-                <Input value={form.deliverContact} onChange={(e) => update("deliverContact", e.target.value)} className={fieldClass} />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 border-t border-dashed border-gray-300 pt-3 text-[14px] leading-7 text-gray-700 no-print">
-            <div>填写方式：只需填写件数和收货信息，然后点击上方“转发邮件下单”。</div>
-            <div>当前邮件内容会带上发注元固定信息、收货信息、订购件数和合计金额。</div>
-            <div>需要时也可以直接打印成接近原厂订货单的版式。</div>
-            <div className="mt-2">备考：</div>
-            <Textarea value={form.note} onChange={(e) => update("note", e.target.value)} placeholder="可选填写，例如送货时间要求" className="mt-1 min-h-[72px] rounded-xl" />
-          </div>
-
-          <div className="mt-5 text-[15px] font-bold md:text-[18px]">
-            株式会社ジーエムライフサポート　〒169-0074　東京都新宿区北新宿 3-1-3　北新宿ロイヤルガーデン 2F
-            <br />
-            TEL:03-3363-2161　FAX:03-3363-2195
+          <div class="line-field">
+            <span class="line-label">御担当者：</span>
+            <input id="deliverContact" class="line-input" type="text">
           </div>
         </div>
       </div>
+
+      <div class="note-box">
+        <div>填写方式：只需填写件数和收货信息，然后点击上方“转发邮件下单”。</div>
+        <div>当前邮件内容会带上发注元固定信息、收货信息、订购件数和合计金额。</div>
+        <div>需要时也可以直接打印成接近原厂订货单的版式。</div>
+        <div class="note-title">备考：</div>
+        <textarea id="note" class="note-textarea" placeholder="可选填写，例如送货时间要求"></textarea>
+      </div>
+
+      <div class="footer">
+        株式会社ジーエムライフサポート　〒169-0074　東京都新宿区北新宿 3-1-3　北新宿ロイヤルガーデン 2F<br>
+        TEL:03-3363-2161　FAX:03-3363-2195
+      </div>
     </div>
-  );
-}
+  </div>
+
+  <script>
+    function todayParts() {
+      const d = new Date();
+      return {
+        year: String(d.getFullYear()),
+        month: String(d.getMonth() + 1),
+        day: String(d.getDate())
+      };
+    }
+
+    function currency(value) {
+      return "¥" + Number(value || 0).toLocaleString("ja-JP");
+    }
+
+    function getValue(id) {
+      const el = document.getElementById(id);
+      return el ? el.value.trim() : "";
+    }
+
+    function buildMailto() {
+      const ORDER_FROM = {
+        customerCode: "6831",
+        merchantName: "金澤企画国際株式会社",
+        zip: "110-0016",
+        address1: "東京都台東区台東 4-31-7-203",
+        tel: "03-6806-0988",
+        fax: "03-6806-0128",
+        contactPerson: ""
+      };
+
+      const date = todayParts();
+
+      const qty244388 = Number(getValue("qty244388") || 0);
+      const qty7588 = Number(getValue("qty7588") || 0);
+      const totalBoxes = qty244388 + qty7588;
+      const totalAmount = qty244388 * 3542 + qty7588 * 6230;
+
+      const deliverToName = getValue("deliverToName");
+      const deliverZip = getValue("deliverZip");
+      const deliverAddress = getValue("deliverAddress");
+      const deliverTel = getValue("deliverTel");
+      const deliverFax = getValue("deliverFax");
+      const deliverContact = getValue("deliverContact");
+      const note = getValue("note");
+
+      const subject = ORDER_FROM.merchantName + "【ロール紙注文】";
+
+      const bodyLines = [
+        "ロール紙注文依頼",
+        "",
+        "発注日：" + date.year + "年 " + date.month + "月 " + date.day + "日",
+        "お客様コード：" + ORDER_FROM.customerCode,
+        "発注元会社名：" + ORDER_FROM.merchantName,
+        "発注元住所：〒" + ORDER_FROM.zip,
+        ORDER_FROM.address1,
+        "発注元TEL：" + ORDER_FROM.tel,
+        "発注元FAX：" + ORDER_FROM.fax,
+        "発注元担当者：" + (ORDER_FROM.contactPerson || ""),
+        "",
+        "【お届け先】",
+        "御会社名：" + deliverToName,
+        "郵便番号：" + deliverZip,
+        "御住所：" + deliverAddress,
+        "TEL：" + deliverTel,
+        "FAX：" + deliverFax,
+        "御担当者：" + deliverContact,
+        "",
+        "2443-88：" + qty244388 + "箱",
+        "75-88：" + qty7588 + "箱",
+        "合計箱数：" + totalBoxes + "箱",
+        "合計金額：" + currency(totalAmount),
+        "備考：" + note
+      ];
+
+      return "mailto:info@gm-life.co.jp?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(bodyLines.join("\n"));
+    }
+
+    function updateMailLink() {
+      document.getElementById("mailBtn").href = buildMailto();
+    }
+
+    function initDate() {
+      const date = todayParts();
+      document.getElementById("yearPart").textContent = date.year;
+      document.getElementById("monthPart").textContent = date.month;
+      document.getElementById("dayPart").textContent = date.day;
+    }
+
+    function bindInputs() {
+      const ids = [
+        "qty244388",
+        "qty7588",
+        "deliverToName",
+        "deliverZip",
+        "deliverAddress",
+        "deliverTel",
+        "deliverFax",
+        "deliverContact",
+        "note"
+      ];
+
+      ids.forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener("input", updateMailLink);
+          el.addEventListener("change", updateMailLink);
+        }
+      });
+    }
+
+    initDate();
+    bindInputs();
+    updateMailLink();
+  </script>
+</body>
+</html>
