@@ -619,143 +619,58 @@
 
       const subject = ORDER_FROM.merchantName + "【ロール紙注文】";
 
-     <script>
-  function todayParts() {
-    const d = new Date();
-    return {
-      year: String(d.getFullYear()),
-      month: String(d.getMonth() + 1),
-      day: String(d.getDate())
-    };
-  }
+      const orderLines = [];
+      if (qty244388 > 0) orderLines.push("2443-88：" + qty244388 + "箱");
+      if (qty7588 > 0) orderLines.push("75-88：" + qty7588 + "箱");
 
-  function currency(value) {
-    return "¥" + Number(value || 0).toLocaleString("ja-JP");
-  }
+      const bodyLines = [
+        "ロール紙注文依頼",
+        "━━━━━━━━━━━━━━━━━━",
+        "",
+        "【発注情報】",
+        "発注日：" + date.year + "年 " + date.month + "月 " + date.day + "日",
+        "お客様コード：" + ORDER_FROM.customerCode,
+        "発注元会社名：" + ORDER_FROM.merchantName,
+        "発注元住所：〒" + ORDER_FROM.zip,
+        ORDER_FROM.address1,
+        "発注元TEL：" + ORDER_FROM.tel,
+        "発注元FAX：" + ORDER_FROM.fax
+      ];
 
-  function getValue(id) {
-    const el = document.getElementById(id);
-    return el ? el.value.trim() : "";
-  }
-
-  function buildMailto() {
-    const ORDER_FROM = {
-      customerCode: "6831",
-      merchantName: "金澤企画国際株式会社",
-      zip: "110-0016",
-      address1: "東京都台東区台東 4-31-7-203",
-      tel: "03-6806-0988",
-      fax: "03-6806-0128",
-      contactPerson: ""
-    };
-
-    const date = todayParts();
-
-    const qty244388 = Number(getValue("qty244388") || 0);
-    const qty7588 = Number(getValue("qty7588") || 0);
-    const totalBoxes = qty244388 + qty7588;
-    const totalAmount = qty244388 * 3542 + qty7588 * 6230;
-
-    const deliverToName = getValue("deliverToName");
-    const deliverZip = getValue("deliverZip");
-    const deliverAddress = getValue("deliverAddress");
-    const deliverTel = getValue("deliverTel");
-    const deliverFax = getValue("deliverFax");
-    const deliverContact = getValue("deliverContact");
-    const note = getValue("note");
-
-    const subject = ORDER_FROM.merchantName + "【ロール紙注文】";
-
-    const orderLines = [];
-    if (qty244388 > 0) orderLines.push("2443-88：" + qty244388 + "箱");
-    if (qty7588 > 0) orderLines.push("75-88：" + qty7588 + "箱");
-
-    const bodyLines = [
-      "ロール紙注文依頼",
-      "━━━━━━━━━━━━━━━━━━",
-      "",
-      "【発注情報】",
-      "発注日：" + date.year + "年 " + date.month + "月 " + date.day + "日",
-      "お客様コード：" + ORDER_FROM.customerCode,
-      "発注元会社名：" + ORDER_FROM.merchantName,
-      "発注元住所：〒" + ORDER_FROM.zip,
-      ORDER_FROM.address1,
-      "発注元TEL：" + ORDER_FROM.tel,
-      "発注元FAX：" + ORDER_FROM.fax
-    ];
-
-    if (ORDER_FROM.contactPerson) {
-      bodyLines.push("発注元担当者：" + ORDER_FROM.contactPerson);
-    }
-
-    bodyLines.push(
-      "",
-      "【お届け先】",
-      "御会社名：" + deliverToName,
-      "郵便番号：" + deliverZip,
-      "御住所：" + deliverAddress,
-      "TEL：" + deliverTel,
-      "FAX：" + deliverFax,
-      "御担当者：" + deliverContact,
-      "",
-      "【注文内容】"
-    );
-
-    if (orderLines.length > 0) {
-      bodyLines.push.apply(bodyLines, orderLines);
-      bodyLines.push("合計箱数：" + totalBoxes + "箱");
-      bodyLines.push("合計金額：" + currency(totalAmount));
-    } else {
-      bodyLines.push("※注文数量未入力");
-    }
-
-    if (note) {
-      bodyLines.push("", "【備考】", note);
-    }
-
-    return "mailto:info@gm-life.co.jp?subject="
-      + encodeURIComponent(subject)
-      + "&body="
-      + encodeURIComponent(bodyLines.join("\r\n"));
-  }
-
-  function updateMailLink() {
-    document.getElementById("mailBtn").href = buildMailto();
-  }
-
-  function initDate() {
-    const date = todayParts();
-    document.getElementById("yearPart").textContent = date.year;
-    document.getElementById("monthPart").textContent = date.month;
-    document.getElementById("dayPart").textContent = date.day;
-  }
-
-  function bindInputs() {
-    const ids = [
-      "qty244388",
-      "qty7588",
-      "deliverToName",
-      "deliverZip",
-      "deliverAddress",
-      "deliverTel",
-      "deliverFax",
-      "deliverContact",
-      "note"
-    ];
-
-    ids.forEach(function(id) {
-      const el = document.getElementById(id);
-      if (el) {
-        el.addEventListener("input", updateMailLink);
-        el.addEventListener("change", updateMailLink);
+      if (ORDER_FROM.contactPerson) {
+        bodyLines.push("発注元担当者：" + ORDER_FROM.contactPerson);
       }
-    });
-  }
 
-  initDate();
-  bindInputs();
-  updateMailLink();
-</script>
+      bodyLines.push(
+        "",
+        "【お届け先】",
+        "御会社名：" + deliverToName,
+        "郵便番号：" + deliverZip,
+        "御住所：" + deliverAddress,
+        "TEL：" + deliverTel,
+        "FAX：" + deliverFax,
+        "御担当者：" + deliverContact,
+        "",
+        "【注文内容】"
+      );
+
+      if (orderLines.length > 0) {
+        bodyLines.push.apply(bodyLines, orderLines);
+        bodyLines.push("合計箱数：" + totalBoxes + "箱");
+        bodyLines.push("合計金額：" + currency(totalAmount));
+      } else {
+        bodyLines.push("※注文数量未入力");
+      }
+
+      if (note) {
+        bodyLines.push("", "【備考】", note);
+      }
+
+      return "mailto:info@gm-life.co.jp?subject="
+        + encodeURIComponent(subject)
+        + "&body="
+        + encodeURIComponent(bodyLines.join("\r\n"));
+    }
 
     function updateMailLink() {
       document.getElementById("mailBtn").href = buildMailto();
