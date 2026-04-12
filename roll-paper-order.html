@@ -98,8 +98,7 @@ export default function ThermalPaperOrderWebapp() {
     `合計箱数：${totals.totalBoxes}箱`,
     `合計金額：${currency(totals.totalAmount)}`,
     `備考：${form.note || ""}`,
-  ].join("
-");
+  ].join("\\n");
 
   const mailtoHref = `mailto:info@gm-life.co.jp?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
 
