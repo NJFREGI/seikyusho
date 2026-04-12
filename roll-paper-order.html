@@ -3,38 +3,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ロール紙注文書</title>
+  <title>ロール紙注文</title>
   <style>
     * { box-sizing: border-box; }
     body {
       margin: 0;
+      background: #f5f5f5;
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
-      background: #e5e5e5;
-      color: #000;
+      color: #111827;
     }
-    .page-wrap {
-      max-width: 980px;
+    .wrap {
+      max-width: 720px;
       margin: 0 auto;
-      padding: 12px;
+      padding: 14px;
     }
-    .toolbar {
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+      padding: 18px 16px 20px;
+    }
+    .title {
+      text-align: center;
+      font-size: 26px;
+      font-weight: 800;
+      margin: 4px 0 8px;
+      letter-spacing: 1px;
+    }
+    .sub {
+      text-align: center;
+      color: #6b7280;
+      font-size: 13px;
+      line-height: 1.7;
+      margin-bottom: 18px;
+    }
+    .section {
+      margin-top: 18px;
+    }
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      color: #111827;
+    }
+    .field {
+      margin-bottom: 14px;
+    }
+    .label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #374151;
+    }
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      background: #fff;
+      padding: 12px 14px;
+      font-size: 16px;
+      outline: none;
+    }
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: #111827;
+    }
+    .textarea {
+      min-height: 92px;
+      resize: vertical;
+      font-family: inherit;
+    }
+    .readonly {
+      background: #f9fafb;
+      color: #111827;
+    }
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 110px;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .help {
+      font-size: 12px;
+      color: #6b7280;
+      line-height: 1.7;
+      margin-top: 4px;
+    }
+    .actions {
+      margin-top: 24px;
       display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 16px;
+      flex-direction: column;
+      gap: 10px;
     }
     .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 18px;
+      width: 100%;
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 800;
       cursor: pointer;
-      font-size: 15px;
-      font-weight: 700;
       text-decoration: none;
+      text-align: center;
+      display: inline-block;
     }
     .btn-mail {
       background: #111827;
@@ -44,546 +119,125 @@
       background: #e5e7eb;
       color: #111827;
     }
-
-    .sheet {
-      background: #fff;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-      padding: 20px 18px 24px;
+    .preview {
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 14px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
     }
-
-    .top-title {
-      text-align: center;
-      font-weight: 700;
-      line-height: 1.5;
-      font-size: 18px;
-    }
-    .fax-line {
-      margin-top: 6px;
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      gap: 20px;
-      flex-wrap: wrap;
-      font-weight: 700;
-    }
-    .fax-line .tel {
-      font-size: 17px;
-    }
-    .fax-line .fax {
-      font-size: 34px;
-      font-weight: 900;
-    }
-    .main-title {
-      margin-top: 10px;
-      text-align: center;
-      font-size: 44px;
-      font-weight: 900;
-      letter-spacing: 1px;
-      line-height: 1.2;
-    }
-    .info-block {
-      margin-top: 10px;
-      font-size: 15px;
-      font-weight: 700;
-      line-height: 1.8;
-    }
-    .product-head {
-      margin-top: 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .product-head .left {
-      font-size: 28px;
-      font-weight: 900;
-    }
-    .product-head .right {
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 8px;
-    }
-    th, td {
-      border: 1px solid #000;
-      padding: 8px 6px;
-      text-align: center;
-      vertical-align: middle;
-      font-size: 15px;
-    }
-    th {
-      font-weight: 900;
-      background: #fff;
-    }
-    td.code,
-    td.rolls,
-    td.unit,
-    td.price {
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    td.spec {
-      line-height: 1.6;
-    }
-    .qty-cell {
-      min-width: 120px;
-    }
-    .qty-box-wrap {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .qty-input {
-      width: 70px;
-      height: 38px;
-      border: 1px solid #000;
-      border-radius: 0;
-      text-align: center;
-      font-size: 18px;
-      background: #fff;
-    }
-    .qty-unit {
-      font-weight: 700;
-      font-size: 18px;
-    }
-
-    .shipping-note {
-      margin-top: 8px;
-      font-size: 15px;
-      font-weight: 700;
-      line-height: 1.7;
-    }
-    .order-way {
-      margin-top: 18px;
-      line-height: 1.5;
-      font-weight: 900;
-    }
-    .order-way .fax-big {
-      font-size: 34px;
-    }
-    .order-way .mail-big {
-      font-size: 30px;
-    }
-    .order-way .pay-title {
-      margin-top: 8px;
-      font-size: 18px;
-      font-weight: 700;
-    }
-    .order-way .pay-main {
-      font-size: 22px;
-    }
-    .order-way .pay-sub {
-      font-size: 16px;
-      font-weight: 700;
-      margin-top: 4px;
-    }
-
-    .form-box {
-      margin-top: 16px;
-      border: 1px solid #000;
-    }
-    .form-box .date-row {
-      border-bottom: 1px solid #000;
-      text-align: center;
-      font-weight: 900;
-      font-size: 24px;
-      padding: 10px 8px;
-      line-height: 1.8;
-    }
-    .date-part {
-      display: inline-block;
-      min-width: 72px;
-      text-align: center;
-    }
-    .from-box {
-      border-bottom: 1px solid #000;
-      padding: 16px 18px;
-      font-size: 18px;
-      line-height: 1.9;
-    }
-    .from-indent {
-      padding-left: 108px;
-    }
-    .to-box {
-      padding: 16px 18px;
-      font-size: 18px;
-      line-height: 1.9;
-    }
-
-    .line-field {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .line-field.top {
-      align-items: flex-start;
-    }
-    .line-label {
-      min-width: 108px;
-      font-weight: 700;
-      white-space: nowrap;
-    }
-    .line-input {
-      flex: 1;
-      border: 0;
-      border-bottom: 1px solid #000;
-      border-radius: 0;
-      background: transparent;
-      padding: 6px 4px;
-      font-size: 16px;
-      outline: none;
-    }
-    .zip-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .preview-title {
+      font-size: 14px;
+      font-weight: 800;
       margin-bottom: 8px;
     }
-    .zip-mark {
-      font-weight: 700;
-    }
-    .addr-wrap {
-      flex: 1;
-    }
-    .line-textarea {
-      width: 100%;
-      min-height: 70px;
-      border: 0;
-      border-bottom: 1px solid #000;
-      border-radius: 0;
-      background: transparent;
-      padding: 6px 4px;
-      font-size: 16px;
-      outline: none;
-      resize: vertical;
-      font-family: inherit;
-    }
-
-    .note-box {
-      margin-top: 16px;
-      border-top: 1px dashed #bbb;
-      padding-top: 12px;
-      font-size: 14px;
-      line-height: 1.9;
-      color: #444;
-    }
-    .note-title {
-      margin-top: 8px;
-      font-weight: 700;
-    }
-    .note-textarea {
-      width: 100%;
-      min-height: 78px;
-      margin-top: 8px;
-      padding: 10px 12px;
-      border: 1px solid #ccc;
-      border-radius: 12px;
-      font-size: 14px;
-      font-family: inherit;
-    }
-
-    .footer {
-      margin-top: 18px;
-      font-size: 15px;
-      font-weight: 700;
+    .preview pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-size: 13px;
       line-height: 1.8;
-    }
-
-    @media (max-width: 768px) {
-      .sheet {
-        padding: 14px 10px 18px;
-      }
-      .top-title {
-        font-size: 15px;
-      }
-      .fax-line .tel {
-        font-size: 14px;
-      }
-      .fax-line .fax {
-        font-size: 24px;
-      }
-      .main-title {
-        font-size: 28px;
-      }
-      .info-block {
-        font-size: 13px;
-      }
-      .product-head .left {
-        font-size: 20px;
-      }
-      .product-head .right {
-        font-size: 14px;
-      }
-      th, td {
-        font-size: 12px;
-        padding: 6px 4px;
-      }
-      .qty-input {
-        width: 56px;
-        height: 34px;
-        font-size: 16px;
-      }
-      .qty-unit {
-        font-size: 16px;
-      }
-      .shipping-note {
-        font-size: 12px;
-      }
-      .order-way .fax-big {
-        font-size: 23px;
-      }
-      .order-way .mail-big {
-        font-size: 20px;
-      }
-      .order-way .pay-title {
-        font-size: 15px;
-      }
-      .order-way .pay-main {
-        font-size: 18px;
-      }
-      .order-way .pay-sub {
-        font-size: 13px;
-      }
-      .form-box .date-row {
-        font-size: 18px;
-      }
-      .date-part {
-        min-width: 52px;
-      }
-      .from-box,
-      .to-box {
-        font-size: 14px;
-        line-height: 1.8;
-        padding: 12px 10px;
-      }
-      .from-indent {
-        padding-left: 78px;
-      }
-      .line-field {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 4px;
-      }
-      .line-label {
-        min-width: auto;
-      }
-      .line-input,
-      .line-textarea {
-        font-size: 15px;
-      }
-      .footer {
-        font-size: 13px;
-      }
+      color: #374151;
+      font-family: inherit;
     }
 
     @media print {
-      body {
-        background: #fff !important;
-      }
-      .page-wrap {
-        max-width: 100%;
-        padding: 0;
-      }
-      .toolbar,
-      .note-box {
-        display: none !important;
-      }
-      .sheet {
-        box-shadow: none !important;
-        margin: 0 !important;
-        padding: 16px 10px 18px;
-      }
-      input, textarea {
-        border: none !important;
-        box-shadow: none !important;
-        outline: none !important;
-        background: transparent !important;
-      }
-      .qty-input {
-        border: 1px solid #000 !important;
-      }
+      body { background: #fff !important; }
+      .wrap { max-width: 100%; padding: 0; }
+      .card { box-shadow: none; border-radius: 0; padding: 12px; }
+      .actions, .preview { display: none !important; }
     }
   </style>
 </head>
 <body>
-  <div class="page-wrap">
-    <div class="toolbar">
-      <a class="btn btn-mail" id="mailBtn" href="javascript:void(0)">✉ 转发邮件下单</a>
-      <button class="btn btn-print" type="button" onclick="window.print()">🖨 打印 / 传真</button>
-    </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="title">ロール紙注文</div>
+      <div class="sub">
+        必要事項を入力後、ページ下部の「転送メール作成」を押してください。<br>
+        発注日は本日の日付で自動入力されます。
+      </div>
 
-    <div class="sheet">
-      <div class="top-title">
-        <div>たすかるねっと（株）ジーエムライフサポート　サプライセンター行</div>
-        <div class="fax-line">
-          <span class="tel">TEL：03(3363)2161</span>
-          <span class="fax">FAX：03-3363-2195</span>
+      <div class="section">
+        <div class="section-title">発注日</div>
+        <div class="field">
+          <input id="orderDate" class="input readonly" type="text" readonly>
         </div>
       </div>
 
-      <div class="main-title">ロール紙注文書</div>
+      <div class="section">
+        <div class="section-title">ロール紙情報</div>
 
-      <div class="info-block">
-        <div>注文方法 ⇒ ご注文はこの注文書で FAX または、メールにてお願いします。</div>
-        <div>消 費 税 ⇒ 販売価格に含まれています。</div>
-        <div>
-          納　　期 ⇒ 平日午後２時までのご注文…当日出荷<br>
-          <span style="padding-left:84px;">平日午後２時以降、土・日・祝日のご注文…翌営業日の出荷</span>
+        <div class="spec-grid">
+          <select id="paperSpec1" class="select">
+            <option value="">規格を選択してください</option>
+            <option value="2443-88（80mm×80Φ×12mm / 75μ / 20巻）">2443-88（80mm×80Φ×12mm / 75μ / 20巻）</option>
+            <option value="75-88（80mm×80Φ×12mm / 75μ / 48巻）">75-88（80mm×80Φ×12mm / 75μ / 48巻）</option>
+          </select>
+          <input id="paperQty1" class="input" type="number" min="0" placeholder="数量">
+        </div>
+
+        <div class="spec-grid">
+          <select id="paperSpec2" class="select">
+            <option value="">規格を選択してください</option>
+            <option value="2443-88（80mm×80Φ×12mm / 75μ / 20巻）">2443-88（80mm×80Φ×12mm / 75μ / 20巻）</option>
+            <option value="75-88（80mm×80Φ×12mm / 75μ / 48巻）">75-88（80mm×80Φ×12mm / 75μ / 48巻）</option>
+          </select>
+          <input id="paperQty2" class="input" type="number" min="0" placeholder="数量">
+        </div>
+
+        <div class="help">
+          不要的项目可以留空。数量为 0 或未填写的项目不会显示在邮件内容中。
         </div>
       </div>
 
-      <div class="product-head">
-        <div class="left">POS 用感熱レジロール紙</div>
-        <div class="right">2023 年 6 月 ver.</div>
-      </div>
+      <div class="section">
+        <div class="section-title">お届け先</div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>商品コード</th>
-            <th>品名・規格</th>
-            <th>箱入数</th>
-            <th>単 価</th>
-            <th>販 売 価 格</th>
-            <th>ご 注 文 数</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td class="code">2443-88</td>
-            <td class="spec">
-              <div>80mm×80Φ×12mm</div>
-              <div>75μ 1巻 PP</div>
-            </td>
-            <td class="rolls">20 巻</td>
-            <td class="unit">161 円</td>
-            <td class="price">3,542 円</td>
-            <td class="qty-cell">
-              <div class="qty-box-wrap">
-                <input id="qty244388" class="qty-input" type="number" min="0" value="">
-                <span class="qty-unit">箱</span>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td class="code">75-88</td>
-            <td class="spec">
-              <div>80mm×80Φ×12mm</div>
-              <div>75μ 1巻 PP</div>
-            </td>
-            <td class="rolls">48 巻</td>
-            <td class="unit">118 円</td>
-            <td class="price">6,230 円</td>
-            <td class="qty-cell">
-              <div class="qty-box-wrap">
-                <input id="qty7588" class="qty-input" type="number" min="0" value="">
-                <span class="qty-unit">箱</span>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="shipping-note">
-        ●全国送料無料　※但し、北海道 198 円(税込2198-88)、沖縄離島別送料がかかります。
-      </div>
-
-      <div class="order-way">
-        <div class="fax-big">ご注文は FAX で ⇨ 03-3363-2195</div>
-        <div class="mail-big">メールのご注文は ⇨ info@gm-life.co.jp</div>
-        <div class="pay-title">お支払方法</div>
-        <div class="pay-main">月末締め翌月末払い</div>
-        <div class="pay-sub">請求書は、弊社より下記ご住所【6831】宛、郵送致します。</div>
-      </div>
-
-      <div class="form-box">
-        <div class="date-row">
-          発　注　日 ：
-          <span class="date-part" id="yearPart"></span> 年
-          <span class="date-part" id="monthPart"></span> 月
-          <span class="date-part" id="dayPart"></span> 日
+        <div class="field">
+          <label class="label" for="deliverToName">お届け先御会社名</label>
+          <input id="deliverToName" class="input" type="text" placeholder="例：〇〇株式会社">
         </div>
 
-        <div class="from-box">
-          <div>【お客様コード　6831】</div>
-          <div>御会社名 ： 金澤企画国際株式会社</div>
-          <div>御 住 所 ： 〒110-0016</div>
-          <div class="from-indent">東京都台東区台東 4-31-7-203</div>
-          <div>ＴＥＬ ： 03-6806-0988</div>
-          <div>ＦＡＸ ： 03-6806-0128</div>
-          <div>御担当者 ： </div>
+        <div class="field">
+          <label class="label" for="deliverAddress">ご住所</label>
+          <textarea id="deliverAddress" class="textarea" placeholder="例：東京都〇〇区〇〇 1-2-3"></textarea>
         </div>
 
-        <div class="to-box">
-          <div>【お届け先】【納品先コード　　　　　】</div>
-
-          <div class="line-field">
-            <span class="line-label">御会社名：</span>
-            <input id="deliverToName" class="line-input" type="text">
-          </div>
-
-          <div class="line-field top">
-            <span class="line-label">御 住 所：</span>
-            <div class="addr-wrap">
-              <div class="zip-wrap">
-                <span class="zip-mark">〒</span>
-                <input id="deliverZip" class="line-input" type="text">
-              </div>
-              <textarea id="deliverAddress" class="line-textarea"></textarea>
-            </div>
-          </div>
-
-          <div class="line-field">
-            <span class="line-label">ＴＥＬ：</span>
-            <input id="deliverTel" class="line-input" type="text">
-          </div>
-
-          <div class="line-field">
-            <span class="line-label">ＦＡＸ：</span>
-            <input id="deliverFax" class="line-input" type="text">
-          </div>
-
-          <div class="line-field">
-            <span class="line-label">御担当者：</span>
-            <input id="deliverContact" class="line-input" type="text">
-          </div>
+        <div class="field">
+          <label class="label" for="deliverTel">TEL</label>
+          <input id="deliverTel" class="input" type="text" placeholder="例：03-1234-5678">
         </div>
       </div>
 
-      <div class="note-box">
-        <div>填写方式：只需填写件数和收货信息，然后点击上方“转发邮件下单”。</div>
-        <div>当前邮件内容会带上发注元固定信息、收货信息、订购件数和合计金额。</div>
-        <div>需要时也可以直接打印成接近原厂订货单的版式。</div>
-        <div class="note-title">备考：</div>
-        <textarea id="note" class="note-textarea" placeholder="可选填写，例如送货时间要求"></textarea>
+      <div class="section">
+        <div class="field">
+          <label class="label" for="note">備考（任意）</label>
+          <textarea id="note" class="textarea" placeholder="例：平日午前中着希望"></textarea>
+        </div>
       </div>
 
-      <div class="footer">
-        株式会社ジーエムライフサポート　〒169-0074　東京都新宿区北新宿 3-1-3　北新宿ロイヤルガーデン 2F<br>
-        TEL:03-3363-2161　FAX:03-3363-2195
+      <div class="actions">
+        <a id="mailBtn" class="btn btn-mail" href="javascript:void(0)">転送メール作成</a>
+        <button class="btn btn-print" type="button" onclick="window.print()">印刷</button>
+      </div>
+
+      <div class="preview">
+        <div class="preview-title">邮件内容预览</div>
+        <pre id="mailPreview"></pre>
       </div>
     </div>
   </div>
 
   <script>
-    function todayParts() {
-      const d = new Date();
-      return {
-        year: String(d.getFullYear()),
-        month: String(d.getMonth() + 1),
-        day: String(d.getDate())
-      };
-    }
+    const ORDER_FROM = {
+      merchantName: "金澤企画国際株式会社【コード　6831】",
+      emailTo: "info@gm-life.co.jp"
+    };
 
-    function currency(value) {
-      return "¥" + Number(value || 0).toLocaleString("ja-JP");
+    function todayText() {
+      const d = new Date();
+      return d.getFullYear() + "年 " + (d.getMonth() + 1) + "月 " + d.getDate() + "日";
     }
 
     function getValue(id) {
@@ -591,108 +245,85 @@
       return el ? el.value.trim() : "";
     }
 
-    function buildMailto() {
-      const ORDER_FROM = {
-        customerCode: "6831",
-        merchantName: "金澤企画国際株式会社",
-        zip: "110-0016",
-        address1: "東京都台東区台東 4-31-7-203",
-        tel: "03-6806-0988",
-        fax: "03-6806-0128",
-        contactPerson: ""
-      };
+    function buildOrderItems() {
+      const spec1 = getValue("paperSpec1");
+      const qty1 = Number(getValue("paperQty1") || 0);
+      const spec2 = getValue("paperSpec2");
+      const qty2 = Number(getValue("paperQty2") || 0);
 
-      const date = todayParts();
+      const items = [];
+      if (spec1 && qty1 > 0) items.push(spec1 + "　" + qty1 + "箱");
+      if (spec2 && qty2 > 0) items.push(spec2 + "　" + qty2 + "箱");
+      return items;
+    }
 
-      const qty244388 = Number(getValue("qty244388") || 0);
-      const qty7588 = Number(getValue("qty7588") || 0);
-      const totalBoxes = qty244388 + qty7588;
-      const totalAmount = qty244388 * 3542 + qty7588 * 6230;
-
+    function buildMailContent() {
+      const orderDate = getValue("orderDate");
       const deliverToName = getValue("deliverToName");
-      const deliverZip = getValue("deliverZip");
       const deliverAddress = getValue("deliverAddress");
       const deliverTel = getValue("deliverTel");
-      const deliverFax = getValue("deliverFax");
-      const deliverContact = getValue("deliverContact");
       const note = getValue("note");
+      const items = buildOrderItems();
 
-      const subject = ORDER_FROM.merchantName + "【ロール紙注文】";
-
-      const orderLines = [];
-      if (qty244388 > 0) orderLines.push("2443-88：" + qty244388 + "箱");
-      if (qty7588 > 0) orderLines.push("75-88：" + qty7588 + "箱");
-
-      const bodyLines = [
+      const lines = [
         "ロール紙注文依頼",
-        "━━━━━━━━━━━━━━━━━━",
         "",
-        "【発注情報】",
-        "発注日：" + date.year + "年 " + date.month + "月 " + date.day + "日",
-        "お客様コード：" + ORDER_FROM.customerCode,
-        "発注元会社名：" + ORDER_FROM.merchantName,
-        "発注元住所：〒" + ORDER_FROM.zip,
-        ORDER_FROM.address1,
-        "発注元TEL：" + ORDER_FROM.tel,
-        "発注元FAX：" + ORDER_FROM.fax
+        "発注日：" + orderDate,
+        "",
+        "【注文内容】"
       ];
 
-      if (ORDER_FROM.contactPerson) {
-        bodyLines.push("発注元担当者：" + ORDER_FROM.contactPerson);
+      if (items.length > 0) {
+        items.forEach(function(item) {
+          lines.push(item);
+        });
+      } else {
+        lines.push("※注文内容未入力");
       }
 
-      bodyLines.push(
+      lines.push(
         "",
         "【お届け先】",
         "御会社名：" + deliverToName,
-        "郵便番号：" + deliverZip,
-        "御住所：" + deliverAddress,
-        "TEL：" + deliverTel,
-        "FAX：" + deliverFax,
-        "御担当者：" + deliverContact,
-        "",
-        "【注文内容】"
+        "ご住所：" + deliverAddress,
+        "TEL：" + deliverTel
       );
 
-      if (orderLines.length > 0) {
-        bodyLines.push.apply(bodyLines, orderLines);
-        bodyLines.push("合計箱数：" + totalBoxes + "箱");
-        bodyLines.push("合計金額：" + currency(totalAmount));
-      } else {
-        bodyLines.push("※注文数量未入力");
-      }
-
       if (note) {
-        bodyLines.push("", "【備考】", note);
+        lines.push("", "【備考】", note);
       }
 
-      return "mailto:info@gm-life.co.jp?subject="
-        + encodeURIComponent(subject)
-        + "&body="
-        + encodeURIComponent(bodyLines.join("\r\n"));
+      lines.push(
+        "",
+        "お手数をおかけしますが、何卒よろしくお願い申し上げます。"
+      );
+
+      return lines.join("\r\n");
     }
 
     function updateMailLink() {
-      document.getElementById("mailBtn").href = buildMailto();
+      const subject = ORDER_FROM.merchantName + "【ロール紙注文】";
+      const body = buildMailContent();
+      const href =
+        "mailto:" + ORDER_FROM.emailTo +
+        "?subject=" + encodeURIComponent(subject) +
+        "&body=" + encodeURIComponent(body);
+
+      document.getElementById("mailBtn").href = href;
+      document.getElementById("mailPreview").textContent = body;
     }
 
-    function initDate() {
-      const date = todayParts();
-      document.getElementById("yearPart").textContent = date.year;
-      document.getElementById("monthPart").textContent = date.month;
-      document.getElementById("dayPart").textContent = date.day;
-    }
+    function init() {
+      document.getElementById("orderDate").value = todayText();
 
-    function bindInputs() {
       const ids = [
-        "qty244388",
-        "qty7588",
+        "paperSpec1",
+        "paperQty1",
+        "paperSpec2",
+        "paperQty2",
         "deliverToName",
-        "deliverZip",
         "deliverAddress",
         "deliverTel",
-        "deliverFax",
-        "deliverContact",
         "note"
       ];
 
@@ -703,11 +334,11 @@
           el.addEventListener("change", updateMailLink);
         }
       });
+
+      updateMailLink();
     }
 
-    initDate();
-    bindInputs();
-    updateMailLink();
+    init();
   </script>
 </body>
 </html>
