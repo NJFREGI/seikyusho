@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ロール紙注文書</title>
+<style>
+:root {
+  --ink:#111;
+  --paper:#fff;
+  --border:#000;
+  --bg:#e5e5e5;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Noto Sans JP",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
+.page-wrap{max-width:980px;margin:0 auto;padding:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.btn{border:none;border-radius:10px;padding:12px 18px;font-size:14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn-mail{background:#c0392b;color:#fff}
+.btn-print{background:#1a1a2e;color:#fff}
+.sheet{background:#fff;box-shadow:0 8px 28px rgba(0,0,0,.12);padding:18px 14px}
+.topline{text-align:center;font-weight:700;line-height:1.3;font-size:16px}
+.telrow{display:flex;justify-content:center;gap:14px;align-items:flex-end;margin-top:4px;flex-wrap:wrap}
+.telrow .fax{font-size:24px;font-weight:900}
+.title{text-align:center;font-size:40px;font-weight:900;letter-spacing:-1px;margin:10px 0 6px}
+.note-lines{font-size:13px;font-weight:700;line-height:1.65}
+.section-head{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px;gap:10px}
+.section-head .left{font-size:22px;font-weight:900}
+.section-head .right{font-size:14px;font-weight:700}
+table{width:100%;border-collapse:collapse;margin-top:6px;font-size:13px}
+th,td{border:1px solid #000;padding:6px 4px;text-align:center;vertical-align:middle}
+th{font-weight:800}
+.product-name{line-height:1.5}
+.qty-box{display:flex;align-items:center;justify-content:center;gap:6px}
+.qty-input{width:62px;height:34px;border:1px solid #000;text-align:center;font-size:16px;border-radius:0;background:#fff}
+.free-ship{margin-top:6px;font-size:12px;font-weight:700}
+.order-lines{margin-top:14px;font-weight:900;line-height:1.35}
+.order-lines .big{font-size:24px}
+.order-lines .mid{font-size:20px}
+.order-lines .small{font-size:13px;font-weight:700;margin-top:4px}
+.info-box{margin-top:12px;border:1px solid #000}
+.info-date{border-bottom:1px solid #000;text-align:center;font-size:20px;font-weight:900;padding:8px 6px}
+.info-section{padding:12px 10px;font-size:14px;line-height:1.9}
+.info-section.from{border-bottom:1px solid #000}
+.row{display:flex;align-items:flex-start;gap:8px;margin-top:4px}
+.label{min-width:86px;font-weight:700}
+.value{flex:1}
+.inline-line{border:none;border-bottom:1px solid #000;background:transparent;width:100%;min-height:28px;padding:2px 4px;font-size:14px;border-radius:0;outline:none}
+.address-box{min-height:62px;resize:vertical}
+.footer{margin-top:14px;font-size:13px;font-weight:700;line-height:1.6}
+.helper{margin-top:10px;border-top:1px dashed #bbb;padding-top:10px;font-size:12px;line-height:1.7;color:#555}
+.helper textarea{width:100%;margin-top:6px;border:1px solid #ccc;border-radius:8px;padding:8px;font-size:13px;min-height:70px}
+@media (max-width:700px){
+  .page-wrap{padding:8px}
+  .toolbar{position:sticky;top:0;background:var(--bg);padding-bottom:8px;z-index:5}
+  .btn{flex:1}
+  .sheet{padding:14px 10px}
+  .topline{font-size:12px}
+  .telrow{gap:10px}
+  .telrow span{font-size:12px !important}
+  .telrow .fax{font-size:18px}
+  .title{font-size:30px;margin-top:6px}
+  .note-lines{font-size:11px}
+  .section-head .left{font-size:18px}
+  .section-head .right{font-size:12px}
+  table{font-size:11px}
+  th,td{padding:4px 2px}
+  .qty-input{width:48px;height:30px;font-size:14px}
+  .order-lines .big{font-size:18px}
+  .order-lines .mid{font-size:16px}
+  .info-date{font-size:16px}
+  .info-section{font-size:12px;padding:10px 8px}
+  .label{min-width:72px}
+  .footer{font-size:12px}
+}
+@media print{
+  body{background:#fff}
+  .toolbar,.helper{display:none !important}
+  .page-wrap{max-width:none;padding:0}
+  .sheet{box-shadow:none;padding:12px 10px}
+  input,textarea{border:none !important;outline:none !important;box-shadow:none !important;background:transparent !important}
+  .qty-input{border:1px solid #000 !important}
+}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+  <div class="toolbar">
+    <a class="btn btn-mail" id="mailBtn" href="#">✉ 转发邮件下单</a>
+    <button class="btn btn-print" onclick="window.print()">🖨 打印 / 传真</button>
+  </div>
+
+  <div class="sheet">
+    <div class="topline">たすかるねっと（株）ジーエムライフサポート　サプライセンター行</div>
+    <div class="telrow">
+      <span style="font-size:15px;font-weight:700">TEL：03(3363)2161</span>
+      <span class="fax">FAX：03-3363-2195</span>
+    </div>
+
+    <div class="title">ロール紙注文書</div>
+
+    <div class="note-lines">
+      <div>注文方法 ⇒ ご注文はこの注文書で FAX または、メールにてお願いします。</div>
+      <div>消 費 税 ⇒ 販売価格に含まれています。</div>
+      <div>納　　期 ⇒ 平日午後２時までのご注文…当日出荷<br>平日午後２時以降、土・日・祝日のご注文…翌営業日の出荷</div>
+    </div>
+
+    <div class="section-head">
+      <div class="left">POS 用感熱レジロール紙</div>
+      <div class="right">2023 年 6 月 ver.</div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>商品コード</th>
+          <th>品名・規格</th>
+          <th>箱入数</th>
+          <th>単 価</th>
+          <th>販 売 価 格</th>
+          <th>ご 注 文 数</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>2443-88</strong></td>
+          <td class="product-name">80mm×80Φ×12mm<br>75μ 1巻 PP</td>
+          <td><strong>20 巻</strong></td>
+          <td><strong>161 円</strong></td>
+          <td><strong>3,542 円</strong></td>
+          <td>
+            <div class="qty-box"><input id="qty244388" class="qty-input" type="number" min="0" inputmode="numeric"><span><strong>箱</strong></span></div>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>75-88</strong></td>
+          <td class="product-name">80mm×80Φ×12mm<br>75μ 1巻 PP</td>
+          <td><strong>48 巻</strong></td>
+          <td><strong>118 円</strong></td>
+          <td><strong>6,230 円</strong></td>
+          <td>
+            <div class="qty-box"><input id="qty7588" class="qty-input" type="number" min="0" inputmode="numeric"><span><strong>箱</strong></span></div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="free-ship">●全国送料無料　※但し、北海道 198 円(税込2198-88)、沖縄離島別送料がかかります。</div>
+
+    <div class="order-lines">
+      <div class="big">ご注文は FAX で ⇨ 03-3363-2195</div>
+      <div class="mid">メールのご注文は ⇨ info@gm-life.co.jp</div>
+      <div class="small">お支払方法</div>
+      <div class="mid">月末締め翌月末払い</div>
+      <div class="small">請求書は、弊社より下記ご住所【6831】宛、郵送致します。</div>
+    </div>
+
+    <div class="info-box">
+      <div class="info-date">発　注　日 ： <span id="year"></span> 年 <span id="month"></span> 月 <span id="day"></span> 日</div>
+
+      <div class="info-section from">
+        <div>【お客様コード　6831】</div>
+        <div>御会社名 ： 金澤企画国際株式会社</div>
+        <div>御 住 所 ： 〒110-0016</div>
+        <div style="padding-left:86px">東京都台東区台東 4-31-7-203</div>
+        <div>ＴＥＬ ： 03-6806-0988</div>
+        <div>ＦＡＸ ： 03-6806-0128</div>
+        <div>御担当者 ： </div>
+      </div>
+
+      <div class="info-section">
+        <div>【お届け先】【納品先コード　　　　　】</div>
+        <div class="row"><div class="label">御会社名：</div><div class="value"><input id="deliverToName" class="inline-line"></div></div>
+        <div class="row"><div class="label">御 住 所：</div><div class="value"><div class="row" style="margin-top:0"><div style="font-weight:700">〒</div><div class="value"><input id="deliverZip" class="inline-line"></div></div><textarea id="deliverAddress" class="inline-line address-box"></textarea></div></div>
+        <div class="row"><div class="label">ＴＥＬ：</div><div class="value"><input id="deliverTel" class="inline-line"></div></div>
+        <div class="row"><div class="label">ＦＡＸ：</div><div class="value"><input id="deliverFax" class="inline-line"></div></div>
+        <div class="row"><div class="label">御担当者：</div><div class="value"><input id="deliverContact" class="inline-line"></div></div>
+      </div>
+    </div>
+
+    <div class="helper">
+      只需填写件数和收货信息，然后点击上方“转发邮件下单”。邮件会自动带上发注元固定信息、收货信息、订购件数和合计金额。<br>
+      备考：
+      <textarea id="note" placeholder="可选填写，例如送货时间要求"></textarea>
+    </div>
+
+    <div class="footer">
+      株式会社ジーエムライフサポート　〒169-0074　東京都新宿区北新宿 3-1-3　北新宿ロイヤルガーデン 2F<br>
+      TEL:03-3363-2161　FAX:03-3363-2195
+    </div>
+  </div>
+</div>
+<script>
+const priceA = 3542;
+const priceB = 6230;
+function setToday(){
+  const d = new Date();
+  document.getElementById('year').textContent = d.getFullYear();
+  document.getElementById('month').textContent = d.getMonth()+1;
+  document.getElementById('day').textContent = d.getDate();
+}
+function yen(n){ return '¥' + Number(n||0).toLocaleString('ja-JP'); }
+function updateMail(){
+  const qtyA = Number(document.getElementById('qty244388').value || 0);
+  const qtyB = Number(document.getElementById('qty7588').value || 0);
+  const totalBoxes = qtyA + qtyB;
+  const totalAmount = qtyA * priceA + qtyB * priceB;
+  const subject = '【ロール紙注文】' + (document.getElementById('deliverToName').value || 'ロール紙注文');
+  const body = [
+    'ロール紙注文依頼','',
+    '発注日：' + document.getElementById('year').textContent + '年 ' + document.getElementById('month').textContent + '月 ' + document.getElementById('day').textContent + '日',
+    'お客様コード：6831',
+    '発注元会社名：金澤企画国際株式会社',
+    '発注元住所：〒110-0016 東京都台東区台東 4-31-7-203',
+    '発注元TEL：03-6806-0988',
+    '発注元FAX：03-6806-0128','',
+    '【お届け先】',
+    '御会社名：' + document.getElementById('deliverToName').value,
+    '郵便番号：' + document.getElementById('deliverZip').value,
+    '御住所：' + document.getElementById('deliverAddress').value,
+    'TEL：' + document.getElementById('deliverTel').value,
+    'FAX：' + document.getElementById('deliverFax').value,
+    '御担当者：' + document.getElementById('deliverContact').value,'',
+    '2443-88：' + qtyA + '箱',
+    '75-88：' + qtyB + '箱',
+    '合計箱数：' + totalBoxes + '箱',
+    '合計金額：' + yen(totalAmount),'',
+    '備考：' + document.getElementById('note').value
+  ].join('\n');
+  document.getElementById('mailBtn').href = 'mailto:info@gm-life.co.jp?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+}
+['qty244388','qty7588','deliverToName','deliverZip','deliverAddress','deliverTel','deliverFax','deliverContact','note'].forEach(id=>{
+  document.addEventListener('input', e=>{ if(e.target && e.target.id===id) updateMail(); });
+});
+setToday();
+updateMail();
+</script>
+</body>
+</html>
