@@ -461,6 +461,7 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
   <button class="tab-btn active" onclick="switchTab('invoices',this)">📋 請求書</button>
   <button class="tab-btn" onclick="switchTab('mitsumori',this)">📝 見積書</button>
   <button class="tab-btn" onclick="switchTab('rollpaper',this)">🧾 ロール紙</button>
+  <button class="tab-btn" onclick="switchTab('keiyaku',this)">📄 契約書</button>
   <button class="tab-btn" onclick="switchTab('stores',this)">🏪 店铺管理</button>
   <button class="tab-btn" onclick="switchTab('preview',this)">👁 預覧/下載</button>
 </div>
@@ -533,7 +534,23 @@ main { padding: 24px; max-width: 1100px; margin: 0 auto; }
   </div>
 </div>
 
-
+<!-- TAB: 契約書 -->
+<div id="tab-keiyaku" class="tab-content">
+  <div class="section-header">
+    <div class="section-title">契約書 <small>NJF REGI サービス利用契約申込フォーム</small></div>
+  </div>
+  <div class="auto-notice" style="margin-bottom:16px">
+    <span style="font-size:20px">📄</span>
+    <div><strong>契約申込フォーム：</strong>顧客情報と設備内容を入力して申込リンクを発行できます。顧客はリンクから契約申込書PDFを作成・送信します。</div>
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:16px">
+    <a href="./njf-admin.html" target="_blank" class="btn btn-primary" style="text-decoration:none">🔗 管理後台を別タブで開く</a>
+  </div>
+  <div class="preview-frame" style="padding:0;overflow:hidden;min-height:820px;border-radius:8px">
+    <iframe src="./njf-admin.html" title="NJF REGI 管理システム" style="width:100%;height:820px;border:none" loading="lazy"></iframe>
+  </div>
+</div>
+  
 <!-- TAB: ROLL PAPER -->
 <div id="tab-rollpaper" class="tab-content">
   <div class="section-header">
